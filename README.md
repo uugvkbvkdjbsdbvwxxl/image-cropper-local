@@ -2,6 +2,11 @@
 
 一个纯前端图片裁剪工具，图片只在浏览器本地处理，不上传到服务器。适合快速裁剪头像、封面图、社交媒体配图和固定尺寸素材。
 
+## 在线访问
+
+- GitHub Pages：https://uugvkbvkdjbsdbvwxxl.github.io/image-cropper-local/
+- Netlify：https://image-cropper-local-20260707-wxl.netlify.app/
+
 ## 功能
 
 - 本地导入图片，支持拖拽上传
