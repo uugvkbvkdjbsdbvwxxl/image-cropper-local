@@ -1,0 +1,2161 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>本地图片裁剪</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%231f6f55'/%3E%3Cpath d='M19 15v30h30' fill='none' stroke='white' stroke-width='5' stroke-linecap='round'/%3E%3Cpath d='M15 25h24v24' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' opacity='.72'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef1ed;
+      --bg-top: #fbfcfa;
+      --surface: #fbfcfa;
+      --surface-2: #f5f7f4;
+      --surface-3: #fdfffc;
+      --ink: #161a17;
+      --muted: #66706a;
+      --subtle: #8a938d;
+      --line: #dce2dc;
+      --line-strong: #c4cec6;
+      --accent: #1f6f55;
+      --accent-strong: #185840;
+      --accent-soft: #e7f2ed;
+      --accent-text: #f8fffb;
+      --stage: #151915;
+      --stage-grid: rgba(255, 255, 255, 0.05);
+      --preview-check: #ecefeb;
+      --shadow: 0 18px 46px rgba(20, 29, 24, 0.1);
+      --shadow-soft: 0 8px 24px rgba(20, 29, 24, 0.08);
+      --radius: 8px;
+      --ease: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --bg: #0f1411;
+        --bg-top: #151b17;
+        --surface: #171d19;
+        --surface-2: #1d241f;
+        --surface-3: #222a24;
+        --ink: #eef4ef;
+        --muted: #a5aea8;
+        --subtle: #7f8a83;
+        --line: #303a33;
+        --line-strong: #435047;
+        --accent: #63c39b;
+        --accent-strong: #8ad8b6;
+        --accent-soft: rgba(99, 195, 155, 0.14);
+        --accent-text: #0b1510;
+        --stage: #0b0f0c;
+        --stage-grid: rgba(255, 255, 255, 0.065);
+        --preview-check: #242c26;
+        --shadow: 0 18px 46px rgba(0, 0, 0, 0.3);
+        --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.24);
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg) 100%);
+      color: var(--ink);
+      font-family: ui-sans-serif, "Segoe UI Variable", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", Arial, sans-serif;
+      letter-spacing: 0;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--accent) 48%, transparent);
+      outline-offset: 2px;
+    }
+
+    button:disabled,
+    input:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .app {
+      min-height: 100dvh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 15px 22px;
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 78%, transparent);
+      background: color-mix(in srgb, var(--surface) 88%, transparent);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 1px 0 color-mix(in srgb, var(--surface-3) 70%, transparent);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: var(--radius);
+      color: #f8fffb;
+      background: linear-gradient(145deg, #1d2420, var(--accent-strong));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 8px 18px rgba(20, 29, 24, 0.16);
+      font-weight: 800;
+      font-size: 15px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.2;
+      white-space: nowrap;
+      font-weight: 780;
+    }
+
+    .status {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      min-height: 16px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: min(52vw, 620px);
+    }
+
+    .top-actions,
+    .toolbar,
+    .button-row,
+    .segmented,
+    .ratio-grid,
+    .preset-grid {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .top-actions .btn {
+      min-width: 92px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 16px;
+      padding: 16px;
+      min-height: 0;
+    }
+
+    .workspace,
+    .side-panel {
+      min-width: 0;
+      background: var(--surface);
+      border: 1px solid color-mix(in srgb, var(--line-strong) 74%, transparent);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-rows: auto minmax(360px, 1fr);
+      overflow: hidden;
+    }
+
+    .toolbar {
+      justify-content: space-between;
+      padding: 12px;
+      border-bottom: 1px solid color-mix(in srgb, var(--line-strong) 70%, transparent);
+      background: color-mix(in srgb, var(--surface) 96%, transparent);
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .side-panel .button-row .btn {
+      width: 100%;
+    }
+
+    .stage {
+      position: relative;
+      min-height: 360px;
+      background-color: var(--stage);
+      background:
+        linear-gradient(45deg, var(--stage-grid) 25%, transparent 25%),
+        linear-gradient(-45deg, var(--stage-grid) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, var(--stage-grid) 75%),
+        linear-gradient(-45deg, transparent 75%, var(--stage-grid) 75%),
+        var(--stage);
+      background-size: 22px 22px;
+      background-position: 0 0, 0 11px, 11px -11px, -11px 0, 0 0;
+      overflow: hidden;
+      box-shadow: inset 0 18px 42px rgba(0, 0, 0, 0.28);
+    }
+
+    .stage.drag-over {
+      outline: 3px solid color-mix(in srgb, var(--accent) 52%, transparent);
+      outline-offset: -3px;
+    }
+
+    #editorCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 360px;
+      touch-action: none;
+    }
+
+    .empty-state {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      pointer-events: none;
+    }
+
+    .empty-box {
+      width: min(440px, 92%);
+      padding: 26px;
+      border: 1px dashed color-mix(in srgb, var(--accent) 38%, transparent);
+      border-radius: var(--radius);
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      box-shadow: var(--shadow-soft);
+      text-align: center;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .empty-title {
+      margin: 0 0 8px;
+      font-size: 20px;
+      font-weight: 780;
+    }
+
+    .empty-copy {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .empty-box .btn {
+      pointer-events: auto;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      padding: 0;
+      overflow: auto;
+      max-height: calc(100dvh - 100px);
+      position: sticky;
+      top: 84px;
+    }
+
+    .panel-section {
+      border-bottom: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+      padding: 16px;
+    }
+
+    .panel-section:last-child {
+      border-bottom: 0;
+    }
+
+    .section-title {
+      margin: 0 0 11px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 780;
+    }
+
+    .preview-shell {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 4 / 3;
+      min-height: 186px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background-color: var(--surface-3);
+      background:
+        linear-gradient(45deg, var(--preview-check) 25%, transparent 25%),
+        linear-gradient(-45deg, var(--preview-check) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, var(--preview-check) 75%),
+        linear-gradient(-45deg, transparent 75%, var(--preview-check) 75%),
+        var(--surface-3);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0, 0 0;
+      overflow: hidden;
+      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface-3) 72%, transparent);
+    }
+
+    #previewCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .metric {
+      padding: 10px;
+      border: 1px solid color-mix(in srgb, var(--line) 90%, transparent);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      min-width: 0;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 760;
+      overflow-wrap: anywhere;
+    }
+
+    .btn,
+    .icon-btn,
+    .segmented button,
+    .ratio-grid button,
+    .preset-grid button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 38px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: var(--surface-3);
+      color: var(--ink);
+      padding: 0 12px;
+      box-shadow: 0 1px 1px rgba(20, 29, 24, 0.04);
+      transition: background 180ms var(--ease), border-color 180ms var(--ease), color 180ms var(--ease), box-shadow 180ms var(--ease), transform 180ms var(--ease);
+    }
+
+    .btn:hover,
+    .icon-btn:hover,
+    .segmented button:hover,
+    .ratio-grid button:hover,
+    .preset-grid button:hover {
+      border-color: var(--line-strong);
+      background: var(--surface-2);
+      box-shadow: 0 4px 12px rgba(20, 29, 24, 0.06);
+    }
+
+    .btn:active,
+    .icon-btn:active,
+    .segmented button:active,
+    .ratio-grid button:active,
+    .preset-grid button:active {
+      transform: translateY(1px);
+    }
+
+    .btn.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: var(--accent-text);
+      box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 22%, transparent);
+    }
+
+    .btn.primary:hover {
+      border-color: var(--accent-strong);
+      background: var(--accent-strong);
+      box-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 28%, transparent);
+    }
+
+    .btn.warn {
+      border-color: var(--line);
+      color: var(--muted);
+      background: var(--surface-3);
+    }
+
+    .icon-btn {
+      width: 38px;
+      padding: 0;
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .segmented,
+    .ratio-grid,
+    .preset-grid {
+      gap: 6px;
+    }
+
+    .segmented {
+      padding: 3px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+    }
+
+    .segmented button,
+    .ratio-grid button,
+    .preset-grid button {
+      min-height: 34px;
+      padding: 0 10px;
+      font-size: 13px;
+    }
+
+    .segmented button {
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .segmented button.active,
+    .ratio-grid button.active,
+    .preset-grid button.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+
+    .segmented button.active {
+      background: var(--surface-3);
+      border-color: color-mix(in srgb, var(--line-strong) 85%, transparent);
+      box-shadow: 0 2px 8px rgba(20, 29, 24, 0.08);
+    }
+
+    .preset-grid {
+      align-items: stretch;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .preset-grid button {
+      justify-content: flex-start;
+      min-width: 0;
+      text-align: left;
+    }
+
+    .control {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .control:last-child {
+      margin-bottom: 0;
+    }
+
+    .control label,
+    .inline-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 720;
+    }
+
+    .range-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .size-fields {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+    }
+
+    .number-field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .number-field input {
+      width: 100%;
+      min-height: 40px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-3);
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .check-row input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--accent);
+    }
+
+    .export-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 22px;
+      accent-color: var(--accent);
+      background: transparent;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 4px;
+      border-radius: 999px;
+      background: var(--line);
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      width: 16px;
+      height: 16px;
+      margin-top: -6px;
+      border: 2px solid var(--surface-3);
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 28%, transparent);
+    }
+
+    input[type="range"]::-moz-range-track {
+      height: 4px;
+      border-radius: 999px;
+      background: var(--line);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--surface-3);
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 28%, transparent);
+    }
+
+    select {
+      width: 100%;
+      min-height: 40px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-3);
+      color: var(--ink);
+      box-shadow: 0 1px 1px rgba(20, 29, 24, 0.03);
+    }
+
+    .value-chip {
+      min-width: 54px;
+      text-align: right;
+      color: var(--muted);
+      font-size: 12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .kbd-hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+      margin: 2px 0 0;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .workspace {
+        grid-template-rows: auto minmax(420px, 58vh);
+      }
+
+      .side-panel {
+        position: static;
+        max-height: none;
+        overflow: visible;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 14px 16px;
+      }
+
+      .top-actions {
+        width: 100%;
+      }
+
+      .top-actions .btn,
+      .button-row .btn {
+        flex: 1 1 150px;
+      }
+
+      .layout {
+        padding: 10px;
+      }
+
+      .workspace {
+        grid-template-rows: auto minmax(360px, 62vh);
+      }
+
+      .toolbar {
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .meta-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .status {
+        max-width: 100%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    @media (prefers-reduced-transparency: reduce) {
+      .topbar,
+      .empty-box {
+        background: var(--surface);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">C</div>
+        <div>
+          <h1>本地图片裁剪</h1>
+          <p class="status" id="statusText">选择图片后开始编辑，所有处理都在本机完成。</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="btn primary" id="uploadBtn" type="button" title="选择图片">
+          <span aria-hidden="true">↑</span>
+          选择图片
+        </button>
+        <button class="btn" id="exportBtnTop" type="button" title="导出裁剪结果" disabled>
+          <span aria-hidden="true">↓</span>
+          导出
+        </button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="workspace" aria-label="裁剪工作区">
+        <div class="toolbar">
+          <div class="toolbar-group" aria-label="编辑模式">
+            <div class="segmented" id="modeButtons">
+              <button type="button" data-mode="crop" class="active" title="调整裁剪框">
+                <span aria-hidden="true">□</span>
+                裁剪框
+              </button>
+              <button type="button" data-mode="move" title="移动图片">
+                <span aria-hidden="true">↔</span>
+                移动图片
+              </button>
+            </div>
+          </div>
+          <div class="toolbar-group" aria-label="快捷操作">
+            <button class="icon-btn" id="undoBtn" type="button" title="撤销" disabled aria-label="撤销">↺</button>
+            <button class="icon-btn" id="redoBtn" type="button" title="重做" disabled aria-label="重做">↻</button>
+            <button class="icon-btn" id="rotateLeftBtn" type="button" title="向左旋转 90 度" disabled aria-label="向左旋转 90 度">↶</button>
+            <button class="icon-btn" id="rotateRightBtn" type="button" title="向右旋转 90 度" disabled aria-label="向右旋转 90 度">↷</button>
+            <button class="btn" id="fitBtn" type="button" title="适合屏幕" disabled>
+              <span aria-hidden="true">⌖</span>
+              适合
+            </button>
+            <button class="btn warn" id="resetBtn" type="button" title="重置图片和裁剪框" disabled>
+              <span aria-hidden="true">↺</span>
+              重置
+            </button>
+          </div>
+        </div>
+
+        <div class="stage" id="stage">
+          <canvas id="editorCanvas" aria-label="图片裁剪画布"></canvas>
+          <div class="empty-state" id="emptyState">
+            <div class="empty-box">
+              <p class="empty-title">拖入图片</p>
+              <p class="empty-copy">支持 PNG、JPEG、WebP、GIF 静态帧等浏览器可读取格式。</p>
+              <button class="btn primary" id="emptyUploadBtn" type="button">
+                <span aria-hidden="true">↑</span>
+                选择图片
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-panel" aria-label="裁剪设置">
+        <section class="panel-section">
+          <h2 class="section-title">预览</h2>
+          <div class="preview-shell">
+            <canvas id="previewCanvas" aria-label="裁剪预览"></canvas>
+          </div>
+          <div class="meta-grid">
+            <div class="metric">
+              <span>输出尺寸</span>
+              <strong id="sizeText">-</strong>
+            </div>
+            <div class="metric">
+              <span>原图</span>
+              <strong id="sourceText">-</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2 class="section-title">比例</h2>
+          <div class="ratio-grid" id="ratioButtons">
+            <button type="button" data-ratio="free" class="active">自由</button>
+            <button type="button" data-ratio="1:1">1:1</button>
+            <button type="button" data-ratio="4:3">4:3</button>
+            <button type="button" data-ratio="16:9">16:9</button>
+            <button type="button" data-ratio="3:4">3:4</button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2 class="section-title">尺寸</h2>
+          <div class="preset-grid" id="presetButtons">
+            <button type="button" data-preset="800x800">头像 800x800</button>
+            <button type="button" data-preset="900x383">公众号 900x383</button>
+            <button type="button" data-preset="1242x1660">小红书 3:4</button>
+            <button type="button" data-preset="1080x1920">竖屏 9:16</button>
+            <button type="button" data-preset="1920x1080">横屏 16:9</button>
+            <button type="button" data-preset="1200x1200">方图 1200</button>
+          </div>
+          <div class="control" style="margin-top: 14px;">
+            <div class="size-fields">
+              <div class="number-field">
+                <label for="widthInput">宽度 px</label>
+                <input id="widthInput" type="number" min="1" step="1" inputmode="numeric" disabled>
+              </div>
+              <div class="number-field">
+                <label for="heightInput">高度 px</label>
+                <input id="heightInput" type="number" min="1" step="1" inputmode="numeric" disabled>
+              </div>
+            </div>
+          </div>
+          <label class="check-row" for="lockRatioInput">
+            <input id="lockRatioInput" type="checkbox" checked>
+            锁定当前宽高比例
+          </label>
+          <div class="button-row" style="margin-top: 12px;">
+            <button class="btn" id="applySizeBtn" type="button" disabled>应用尺寸</button>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <h2 class="section-title">图片</h2>
+          <div class="control">
+            <label for="zoomRange">缩放</label>
+            <div class="range-row">
+              <input id="zoomRange" type="range" min="25" max="300" value="100" step="1" disabled>
+              <span class="value-chip" id="zoomValue">100%</span>
+            </div>
+          </div>
+          <p class="kbd-hint">切到“移动图片”后拖动画布，可调整图片在裁剪框里的位置。</p>
+        </section>
+
+        <section class="panel-section">
+          <h2 class="section-title">导出</h2>
+          <div class="control">
+            <label for="formatSelect">格式</label>
+            <select id="formatSelect">
+              <option value="image/png">PNG</option>
+              <option value="image/jpeg">JPEG</option>
+              <option value="image/webp">WebP</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="scaleSelect">导出倍数</label>
+            <select id="scaleSelect">
+              <option value="1">1x 原始像素</option>
+              <option value="2">2x 高清</option>
+              <option value="3">3x 超清</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="qualityRange">质量</label>
+            <div class="range-row">
+              <input id="qualityRange" type="range" min="40" max="100" value="96" step="1" disabled>
+              <span class="value-chip" id="qualityValue">96%</span>
+            </div>
+          </div>
+          <div class="button-row export-actions">
+            <button class="btn primary" id="exportBtn" type="button" disabled>
+              <span aria-hidden="true">↓</span>
+              下载裁剪图
+            </button>
+            <button class="btn" id="copyBtn" type="button" disabled>
+              <span aria-hidden="true">□</span>
+              复制图片
+            </button>
+          </div>
+        </section>
+      </aside>
+    </main>
+  </div>
+
+  <input class="file-input" id="fileInput" type="file" accept="image/*">
+
+  <script>
+    const canvas = document.getElementById("editorCanvas");
+    const ctx = canvas.getContext("2d");
+    const previewCanvas = document.getElementById("previewCanvas");
+    const previewCtx = previewCanvas.getContext("2d");
+    const stage = document.getElementById("stage");
+    const emptyState = document.getElementById("emptyState");
+    const fileInput = document.getElementById("fileInput");
+    const statusText = document.getElementById("statusText");
+    const sizeText = document.getElementById("sizeText");
+    const sourceText = document.getElementById("sourceText");
+    const zoomRange = document.getElementById("zoomRange");
+    const zoomValue = document.getElementById("zoomValue");
+    const qualityRange = document.getElementById("qualityRange");
+    const qualityValue = document.getElementById("qualityValue");
+    const formatSelect = document.getElementById("formatSelect");
+    const scaleSelect = document.getElementById("scaleSelect");
+    const exportBtn = document.getElementById("exportBtn");
+    const exportBtnTop = document.getElementById("exportBtnTop");
+    const copyBtn = document.getElementById("copyBtn");
+    const undoBtn = document.getElementById("undoBtn");
+    const redoBtn = document.getElementById("redoBtn");
+    const rotateLeftBtn = document.getElementById("rotateLeftBtn");
+    const rotateRightBtn = document.getElementById("rotateRightBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const fitBtn = document.getElementById("fitBtn");
+    const modeButtons = document.getElementById("modeButtons");
+    const ratioButtons = document.getElementById("ratioButtons");
+    const presetButtons = document.getElementById("presetButtons");
+    const widthInput = document.getElementById("widthInput");
+    const heightInput = document.getElementById("heightInput");
+    const lockRatioInput = document.getElementById("lockRatioInput");
+    const applySizeBtn = document.getElementById("applySizeBtn");
+
+    const state = {
+      image: null,
+      imageName: "image",
+      bitmap: null,
+      rotation: 0,
+      zoom: 1,
+      mode: "crop",
+      aspectKey: "free",
+      aspect: null,
+      canvas: { width: 0, height: 0, dpr: 1 },
+      view: { x: 0, y: 0, scale: 1 },
+      crop: null,
+      drag: null
+    };
+
+    const history = {
+      undo: [],
+      redo: [],
+      lastKey: "",
+      restoring: false
+    };
+
+    const HANDLE_SIZE = 13;
+    const MIN_CROP = 34;
+    const HISTORY_LIMIT = 80;
+    const ratios = {
+      "free": null,
+      "1:1": 1,
+      "4:3": 4 / 3,
+      "16:9": 16 / 9,
+      "3:4": 3 / 4
+    };
+
+    const presets = {
+      "800x800": { width: 800, height: 800, label: "头像" },
+      "900x383": { width: 900, height: 383, label: "公众号" },
+      "1242x1660": { width: 1242, height: 1660, label: "小红书" },
+      "1080x1920": { width: 1080, height: 1920, label: "竖屏" },
+      "1920x1080": { width: 1920, height: 1080, label: "横屏" },
+      "1200x1200": { width: 1200, height: 1200, label: "方图" }
+    };
+
+    function clamp(value, min, max) {
+      if (max < min) return min;
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function snapshotEditor() {
+      if (!state.bitmap || !state.crop) return null;
+      return {
+        rotation: state.rotation,
+        zoom: state.zoom,
+        aspectKey: state.aspectKey,
+        aspect: state.aspect,
+        view: { ...state.view },
+        crop: { ...state.crop }
+      };
+    }
+
+    function serializeSnapshot(snapshot) {
+      return JSON.stringify({
+        rotation: snapshot.rotation,
+        zoom: Number(snapshot.zoom.toFixed(5)),
+        aspectKey: snapshot.aspectKey,
+        aspect: snapshot.aspect === null ? null : Number(snapshot.aspect.toFixed(8)),
+        view: {
+          x: Number(snapshot.view.x.toFixed(3)),
+          y: Number(snapshot.view.y.toFixed(3)),
+          scale: Number(snapshot.view.scale.toFixed(6))
+        },
+        crop: {
+          x: Number(snapshot.crop.x.toFixed(3)),
+          y: Number(snapshot.crop.y.toFixed(3)),
+          w: Number(snapshot.crop.w.toFixed(3)),
+          h: Number(snapshot.crop.h.toFixed(3))
+        }
+      });
+    }
+
+    function updateHistoryControls() {
+      undoBtn.disabled = history.undo.length <= 1;
+      redoBtn.disabled = history.redo.length === 0;
+    }
+
+    function clearHistory() {
+      history.undo = [];
+      history.redo = [];
+      history.lastKey = "";
+      history.restoring = false;
+      updateHistoryControls();
+    }
+
+    function commitHistory() {
+      if (history.restoring) return;
+      const snapshot = snapshotEditor();
+      if (!snapshot) {
+        updateHistoryControls();
+        return;
+      }
+      const key = serializeSnapshot(snapshot);
+      if (key === history.lastKey) {
+        updateHistoryControls();
+        return;
+      }
+      history.undo.push(snapshot);
+      if (history.undo.length > HISTORY_LIMIT) history.undo.shift();
+      history.redo = [];
+      history.lastKey = key;
+      updateHistoryControls();
+    }
+
+    function syncRatioButtons() {
+      ratioButtons.querySelectorAll("button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.ratio === state.aspectKey);
+      });
+    }
+
+    function setActivePreset(key) {
+      presetButtons.querySelectorAll("button").forEach((button) => {
+        button.classList.toggle("active", button.dataset.preset === key);
+      });
+    }
+
+    function restoreSnapshot(snapshot) {
+      if (!snapshot || !state.image) return;
+      history.restoring = true;
+      state.rotation = snapshot.rotation;
+      buildRotatedBitmap();
+      state.zoom = snapshot.zoom;
+      state.aspectKey = snapshot.aspectKey;
+      state.aspect = snapshot.aspect;
+      state.view = { ...snapshot.view };
+      state.crop = { ...snapshot.crop };
+      zoomRange.value = String(Math.round(state.zoom * 100));
+      zoomValue.textContent = `${Math.round(state.zoom * 100)}%`;
+      syncRatioButtons();
+      setActivePreset("");
+      render();
+      history.lastKey = serializeSnapshot(snapshot);
+      history.restoring = false;
+      updateHistoryControls();
+    }
+
+    function undoEdit() {
+      if (history.undo.length <= 1) return;
+      const current = history.undo.pop();
+      history.redo.push(current);
+      const previous = history.undo[history.undo.length - 1];
+      restoreSnapshot(previous);
+      setStatus("已撤销。");
+    }
+
+    function redoEdit() {
+      if (!history.redo.length) return;
+      const next = history.redo.pop();
+      history.undo.push(next);
+      restoreSnapshot(next);
+      setStatus("已重做。");
+    }
+
+    function setStatus(message) {
+      statusText.textContent = message;
+    }
+
+    function imageRect() {
+      if (!state.bitmap) return { x: 0, y: 0, w: 0, h: 0 };
+      return {
+        x: state.view.x,
+        y: state.view.y,
+        w: state.bitmap.width * state.view.scale,
+        h: state.bitmap.height * state.view.scale
+      };
+    }
+
+    function canvasPoint(event) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+      };
+    }
+
+    function pointInRect(point, rect) {
+      return point.x >= rect.x && point.x <= rect.x + rect.w &&
+        point.y >= rect.y && point.y <= rect.y + rect.h;
+    }
+
+    function calculateFitScale() {
+      if (!state.bitmap || !state.canvas.width || !state.canvas.height) return 1;
+      const pad = state.canvas.width < 620 ? 22 : 40;
+      return Math.max(0.02, Math.min(
+        (state.canvas.width - pad) / state.bitmap.width,
+        (state.canvas.height - pad) / state.bitmap.height
+      ));
+    }
+
+    function centerImage() {
+      const scale = calculateFitScale() * state.zoom;
+      state.view.scale = scale;
+      state.view.x = (state.canvas.width - state.bitmap.width * scale) / 2;
+      state.view.y = (state.canvas.height - state.bitmap.height * scale) / 2;
+    }
+
+    function fitAspectInside(width, height, aspect) {
+      if (!aspect) return { w: width, h: height };
+      let w = width;
+      let h = w / aspect;
+      if (h > height) {
+        h = height;
+        w = h * aspect;
+      }
+      return { w, h };
+    }
+
+    function makeCenteredCrop(rect, fill = 0.72) {
+      const maxW = Math.max(MIN_CROP, rect.w * fill);
+      const maxH = Math.max(MIN_CROP, rect.h * fill);
+      const size = fitAspectInside(maxW, maxH, state.aspect);
+      return {
+        x: rect.x + (rect.w - size.w) / 2,
+        y: rect.y + (rect.h - size.h) / 2,
+        w: size.w,
+        h: size.h
+      };
+    }
+
+    function clampCropToImage(rect) {
+      const bounds = imageRect();
+      const crop = { ...rect };
+      crop.w = clamp(crop.w, Math.min(MIN_CROP, bounds.w), bounds.w);
+      crop.h = clamp(crop.h, Math.min(MIN_CROP, bounds.h), bounds.h);
+      crop.x = clamp(crop.x, bounds.x, bounds.x + bounds.w - crop.w);
+      crop.y = clamp(crop.y, bounds.y, bounds.y + bounds.h - crop.h);
+      return crop;
+    }
+
+    function ensureCropFitsImage() {
+      if (!state.crop) return;
+      const bounds = imageRect();
+      if (state.crop.w <= bounds.w && state.crop.h <= bounds.h) {
+        state.crop = clampCropToImage(state.crop);
+        return;
+      }
+      const center = {
+        x: state.crop.x + state.crop.w / 2,
+        y: state.crop.y + state.crop.h / 2
+      };
+      const size = fitAspectInside(bounds.w * 0.92, bounds.h * 0.92, state.aspect);
+      state.crop = clampCropToImage({
+        x: center.x - size.w / 2,
+        y: center.y - size.h / 2,
+        w: size.w,
+        h: size.h
+      });
+    }
+
+    function constrainImageToCrop() {
+      if (!state.bitmap || !state.crop) return;
+      const iw = state.bitmap.width * state.view.scale;
+      const ih = state.bitmap.height * state.view.scale;
+      if (iw <= state.crop.w) {
+        state.view.x = state.crop.x + (state.crop.w - iw) / 2;
+      } else {
+        if (state.view.x > state.crop.x) state.view.x = state.crop.x;
+        if (state.view.x + iw < state.crop.x + state.crop.w) {
+          state.view.x = state.crop.x + state.crop.w - iw;
+        }
+      }
+      if (ih <= state.crop.h) {
+        state.view.y = state.crop.y + (state.crop.h - ih) / 2;
+      } else {
+        if (state.view.y > state.crop.y) state.view.y = state.crop.y;
+        if (state.view.y + ih < state.crop.y + state.crop.h) {
+          state.view.y = state.crop.y + state.crop.h - ih;
+        }
+      }
+    }
+
+    function resetViewAndCrop() {
+      if (!state.bitmap) return;
+      centerImage();
+      state.crop = makeCenteredCrop(imageRect());
+      constrainImageToCrop();
+      render();
+    }
+
+    function buildRotatedBitmap() {
+      const source = state.image;
+      const turns = ((state.rotation % 360) + 360) % 360;
+      const canvasBitmap = document.createElement("canvas");
+      const swap = turns === 90 || turns === 270;
+      canvasBitmap.width = swap ? source.naturalHeight : source.naturalWidth;
+      canvasBitmap.height = swap ? source.naturalWidth : source.naturalHeight;
+      const bitmapCtx = canvasBitmap.getContext("2d");
+      bitmapCtx.imageSmoothingEnabled = false;
+
+      bitmapCtx.save();
+      if (turns === 90) {
+        bitmapCtx.translate(canvasBitmap.width, 0);
+        bitmapCtx.rotate(Math.PI / 2);
+      } else if (turns === 180) {
+        bitmapCtx.translate(canvasBitmap.width, canvasBitmap.height);
+        bitmapCtx.rotate(Math.PI);
+      } else if (turns === 270) {
+        bitmapCtx.translate(0, canvasBitmap.height);
+        bitmapCtx.rotate(-Math.PI / 2);
+      }
+      bitmapCtx.drawImage(source, 0, 0);
+      bitmapCtx.restore();
+      state.bitmap = canvasBitmap;
+    }
+
+    function updateControls(enabled) {
+      [
+        exportBtn,
+        exportBtnTop,
+        copyBtn,
+        rotateLeftBtn,
+        rotateRightBtn,
+        resetBtn,
+        fitBtn,
+        zoomRange,
+        widthInput,
+        heightInput,
+        lockRatioInput,
+        applySizeBtn
+      ].forEach((element) => {
+        element.disabled = !enabled;
+      });
+      emptyState.classList.toggle("hidden", enabled);
+      if (!enabled) {
+        widthInput.value = "";
+        heightInput.value = "";
+        setActivePreset("");
+      }
+      updateHistoryControls();
+    }
+
+    async function loadFile(file) {
+      if (!file || !file.type.startsWith("image/")) {
+        setStatus("请选择浏览器支持的图片文件。");
+        return;
+      }
+
+      const url = URL.createObjectURL(file);
+      const image = new Image();
+      image.onload = () => {
+        URL.revokeObjectURL(url);
+        state.image = image;
+        state.imageName = file.name || "image";
+        state.rotation = 0;
+        state.zoom = 1;
+        zoomRange.value = "100";
+        zoomValue.textContent = "100%";
+        buildRotatedBitmap();
+        updateControls(true);
+        sourceText.textContent = `${image.naturalWidth} x ${image.naturalHeight}px`;
+        resetViewAndCrop();
+        clearHistory();
+        commitHistory();
+        setStatus(`已载入：${state.imageName}`);
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(url);
+        setStatus("图片读取失败，请换一张试试。");
+      };
+      image.src = url;
+    }
+
+    function getCropSource() {
+      if (!state.bitmap || !state.crop) return null;
+      const rect = imageRect();
+      const sx = clamp((state.crop.x - rect.x) / state.view.scale, 0, state.bitmap.width);
+      const sy = clamp((state.crop.y - rect.y) / state.view.scale, 0, state.bitmap.height);
+      const ex = clamp((state.crop.x + state.crop.w - rect.x) / state.view.scale, 0, state.bitmap.width);
+      const ey = clamp((state.crop.y + state.crop.h - rect.y) / state.view.scale, 0, state.bitmap.height);
+      return {
+        sx,
+        sy,
+        sw: Math.max(1, ex - sx),
+        sh: Math.max(1, ey - sy)
+      };
+    }
+
+    function getPixelCropSource() {
+      const source = getCropSource();
+      if (!source || !state.bitmap) return null;
+      const sx = clamp(Math.floor(source.sx), 0, state.bitmap.width - 1);
+      const sy = clamp(Math.floor(source.sy), 0, state.bitmap.height - 1);
+      const ex = clamp(Math.ceil(source.sx + source.sw), sx + 1, state.bitmap.width);
+      const ey = clamp(Math.ceil(source.sy + source.sh), sy + 1, state.bitmap.height);
+      return {
+        sx,
+        sy,
+        sw: ex - sx,
+        sh: ey - sy
+      };
+    }
+
+    function getExportScale() {
+      return Number(scaleSelect.value) || 1;
+    }
+
+    function getExportSize(source) {
+      const scale = getExportScale();
+      return {
+        width: Math.max(1, Math.round(source.sw * scale)),
+        height: Math.max(1, Math.round(source.sh * scale)),
+        scale
+      };
+    }
+
+    function updateSizeInputs(source) {
+      if (!source) return;
+      if (document.activeElement === widthInput || document.activeElement === heightInput) return;
+      widthInput.value = String(Math.round(source.sw));
+      heightInput.value = String(Math.round(source.sh));
+    }
+
+    function parseDimension(input) {
+      const value = Number(input.value);
+      if (!Number.isFinite(value)) return null;
+      return Math.max(1, Math.round(value));
+    }
+
+    function currentSizeRatio() {
+      if (state.aspect) return state.aspect;
+      const source = getPixelCropSource();
+      if (source) return source.sw / source.sh;
+      const width = parseDimension(widthInput);
+      const height = parseDimension(heightInput);
+      return width && height ? width / height : 1;
+    }
+
+    function syncLockedDimension(changedInput) {
+      if (!lockRatioInput.checked) return;
+      const ratio = currentSizeRatio();
+      if (!ratio || !Number.isFinite(ratio)) return;
+      if (changedInput === widthInput) {
+        const width = parseDimension(widthInput);
+        if (width) heightInput.value = String(Math.max(1, Math.round(width / ratio)));
+      } else {
+        const height = parseDimension(heightInput);
+        if (height) widthInput.value = String(Math.max(1, Math.round(height * ratio)));
+      }
+    }
+
+    function applyAspectMax(aspect, label) {
+      if (!state.bitmap || !state.crop) return;
+      state.aspect = aspect;
+      state.aspectKey = "custom";
+      syncRatioButtons();
+      const bounds = imageRect();
+      const center = {
+        x: state.crop.x + state.crop.w / 2,
+        y: state.crop.y + state.crop.h / 2
+      };
+      const size = fitAspectInside(bounds.w * 0.92, bounds.h * 0.92, aspect);
+      state.crop = clampCropToImage({
+        x: center.x - size.w / 2,
+        y: center.y - size.h / 2,
+        w: size.w,
+        h: size.h
+      });
+      constrainImageToCrop();
+      render();
+      commitHistory();
+      setStatus(`${label} 超过原图尺寸，已按比例裁剪最大区域。`);
+    }
+
+    function applyOutputSize(width, height, label = "自定义尺寸") {
+      if (!state.bitmap || !state.crop) return false;
+      if (width > state.bitmap.width || height > state.bitmap.height) {
+        setStatus(`目标尺寸超过当前图片可用像素：最大 ${state.bitmap.width} x ${state.bitmap.height}px。`);
+        return false;
+      }
+      state.aspect = width / height;
+      state.aspectKey = "custom";
+      syncRatioButtons();
+      const rect = imageRect();
+      const centerSource = {
+        x: (state.crop.x + state.crop.w / 2 - rect.x) / state.view.scale,
+        y: (state.crop.y + state.crop.h / 2 - rect.y) / state.view.scale
+      };
+      const sx = clamp(Math.round(centerSource.x - width / 2), 0, state.bitmap.width - width);
+      const sy = clamp(Math.round(centerSource.y - height / 2), 0, state.bitmap.height - height);
+      const cropW = width * state.view.scale;
+      const cropH = height * state.view.scale;
+      state.crop = clampCropToImage({
+        x: rect.x + sx * state.view.scale,
+        y: rect.y + sy * state.view.scale,
+        w: cropW,
+        h: cropH
+      });
+      constrainImageToCrop();
+      render();
+      commitHistory();
+      setStatus(`已应用 ${label}：${width} x ${height}px。`);
+      return true;
+    }
+
+    function applyPreset(key) {
+      const preset = presets[key];
+      if (!preset || !state.bitmap) return;
+      setActivePreset(key);
+      widthInput.value = String(preset.width);
+      heightInput.value = String(preset.height);
+      const applied = applyOutputSize(preset.width, preset.height, preset.label);
+      if (!applied) {
+        applyAspectMax(preset.width / preset.height, preset.label);
+      }
+    }
+
+    function drawEmpty() {
+      ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+      ctx.fillStyle = "rgba(255,255,255,0.28)";
+      ctx.fillRect(0, 0, state.canvas.width, state.canvas.height);
+      previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+      sizeText.textContent = "-";
+      sourceText.textContent = "-";
+    }
+
+    function drawCropOverlay() {
+      const crop = state.crop;
+      const width = state.canvas.width;
+      const height = state.canvas.height;
+      ctx.save();
+      ctx.fillStyle = "rgba(6, 9, 8, 0.5)";
+      ctx.beginPath();
+      ctx.rect(0, 0, width, height);
+      ctx.rect(crop.x, crop.y, crop.w, crop.h);
+      ctx.fill("evenodd");
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.58)";
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 3; i += 1) {
+        const x = crop.x + crop.w * i / 3;
+        const y = crop.y + crop.h * i / 3;
+        ctx.beginPath();
+        ctx.moveTo(x, crop.y);
+        ctx.lineTo(x, crop.y + crop.h);
+        ctx.moveTo(crop.x, y);
+        ctx.lineTo(crop.x + crop.w, y);
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.96)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(crop.x, crop.y, crop.w, crop.h);
+
+      ctx.fillStyle = "#fbfcfa";
+      ctx.strokeStyle = "#1f6f55";
+      ctx.lineWidth = 2;
+      for (const handle of getHandles(crop)) {
+        ctx.beginPath();
+        ctx.rect(handle.x - HANDLE_SIZE / 2, handle.y - HANDLE_SIZE / 2, HANDLE_SIZE, HANDLE_SIZE);
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function renderPreview() {
+      const shell = previewCanvas.getBoundingClientRect();
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const nextWidth = Math.max(1, Math.round(shell.width * dpr));
+      const nextHeight = Math.max(1, Math.round(shell.height * dpr));
+      if (previewCanvas.width !== nextWidth || previewCanvas.height !== nextHeight) {
+        previewCanvas.width = nextWidth;
+        previewCanvas.height = nextHeight;
+      }
+      previewCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      previewCtx.clearRect(0, 0, shell.width, shell.height);
+
+      const source = getPixelCropSource();
+      if (!source || !state.bitmap) return;
+
+      const scale = Math.min(shell.width / source.sw, shell.height / source.sh);
+      const dw = source.sw * scale;
+      const dh = source.sh * scale;
+      const dx = (shell.width - dw) / 2;
+      const dy = (shell.height - dh) / 2;
+      previewCtx.imageSmoothingQuality = "high";
+      previewCtx.drawImage(
+        state.bitmap,
+        source.sx,
+        source.sy,
+        source.sw,
+        source.sh,
+        dx,
+        dy,
+        dw,
+        dh
+      );
+
+      const exportSize = getExportSize(source);
+      sizeText.textContent = exportSize.scale === 1
+        ? `${exportSize.width} x ${exportSize.height}px`
+        : `${exportSize.width} x ${exportSize.height}px (${exportSize.scale}x)`;
+      updateSizeInputs(source);
+    }
+
+    function render() {
+      if (!state.canvas.width || !state.canvas.height) return;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(state.canvas.dpr, 0, 0, state.canvas.dpr, 0, 0);
+      ctx.clearRect(0, 0, state.canvas.width, state.canvas.height);
+
+      if (!state.bitmap) {
+        drawEmpty();
+        return;
+      }
+
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(
+        state.bitmap,
+        state.view.x,
+        state.view.y,
+        state.bitmap.width * state.view.scale,
+        state.bitmap.height * state.view.scale
+      );
+      drawCropOverlay();
+      renderPreview();
+    }
+
+    function getHandles(crop) {
+      const x = crop.x;
+      const y = crop.y;
+      const w = crop.w;
+      const h = crop.h;
+      return [
+        { id: "nw", x, y },
+        { id: "n", x: x + w / 2, y },
+        { id: "ne", x: x + w, y },
+        { id: "e", x: x + w, y: y + h / 2 },
+        { id: "se", x: x + w, y: y + h },
+        { id: "s", x: x + w / 2, y: y + h },
+        { id: "sw", x, y: y + h },
+        { id: "w", x, y: y + h / 2 }
+      ];
+    }
+
+    function getHandleAt(point) {
+      if (!state.crop) return null;
+      for (const handle of getHandles(state.crop)) {
+        if (Math.abs(point.x - handle.x) <= HANDLE_SIZE &&
+          Math.abs(point.y - handle.y) <= HANDLE_SIZE) {
+          return handle.id;
+        }
+      }
+      return null;
+    }
+
+    function cursorForHandle(handle) {
+      const cursors = {
+        n: "ns-resize",
+        s: "ns-resize",
+        e: "ew-resize",
+        w: "ew-resize",
+        ne: "nesw-resize",
+        sw: "nesw-resize",
+        nw: "nwse-resize",
+        se: "nwse-resize"
+      };
+      return cursors[handle] || "default";
+    }
+
+    function resizeFree(handle, point, start) {
+      const bounds = imageRect();
+      let left = start.x;
+      let top = start.y;
+      let right = start.x + start.w;
+      let bottom = start.y + start.h;
+
+      if (handle.includes("w")) left = clamp(point.x, bounds.x, right - MIN_CROP);
+      if (handle.includes("e")) right = clamp(point.x, left + MIN_CROP, bounds.x + bounds.w);
+      if (handle.includes("n")) top = clamp(point.y, bounds.y, bottom - MIN_CROP);
+      if (handle.includes("s")) bottom = clamp(point.y, top + MIN_CROP, bounds.y + bounds.h);
+
+      return { x: left, y: top, w: right - left, h: bottom - top };
+    }
+
+    function aspectRectFromCorner(handle, point, start) {
+      const bounds = imageRect();
+      const aspect = state.aspect;
+      const anchorX = handle.includes("w") ? start.x + start.w : start.x;
+      const anchorY = handle.includes("n") ? start.y + start.h : start.y;
+      const signX = handle.includes("e") ? 1 : -1;
+      const signY = handle.includes("s") ? 1 : -1;
+
+      let desiredW = Math.max(MIN_CROP, Math.abs(point.x - anchorX));
+      let desiredH = Math.max(MIN_CROP / aspect, desiredW / aspect);
+      const pointerH = Math.abs(point.y - anchorY);
+      if (pointerH > MIN_CROP && pointerH < desiredH) {
+        desiredH = pointerH;
+        desiredW = desiredH * aspect;
+      }
+
+      const maxW = signX > 0 ? bounds.x + bounds.w - anchorX : anchorX - bounds.x;
+      const maxH = signY > 0 ? bounds.y + bounds.h - anchorY : anchorY - bounds.y;
+      desiredW = Math.min(desiredW, maxW, maxH * aspect);
+      desiredH = desiredW / aspect;
+      desiredW = Math.max(Math.min(desiredW, maxW), Math.min(MIN_CROP, maxW));
+      desiredH = Math.max(Math.min(desiredH, maxH), Math.min(MIN_CROP / aspect, maxH));
+
+      return {
+        x: signX > 0 ? anchorX : anchorX - desiredW,
+        y: signY > 0 ? anchorY : anchorY - desiredH,
+        w: desiredW,
+        h: desiredH
+      };
+    }
+
+    function aspectRectFromEdge(handle, point, start) {
+      const bounds = imageRect();
+      const aspect = state.aspect;
+      const centerX = start.x + start.w / 2;
+      const centerY = start.y + start.h / 2;
+      let x = start.x;
+      let y = start.y;
+      let w = start.w;
+      let h = start.h;
+
+      if (handle === "e" || handle === "w") {
+        if (handle === "e") {
+          x = start.x;
+          w = clamp(point.x - x, MIN_CROP, bounds.x + bounds.w - x);
+        } else {
+          const right = start.x + start.w;
+          w = clamp(right - point.x, MIN_CROP, right - bounds.x);
+          x = right - w;
+        }
+        h = w / aspect;
+        y = centerY - h / 2;
+        if (y < bounds.y) {
+          y = bounds.y;
+          h = Math.min(h, bounds.h);
+          w = h * aspect;
+          if (handle === "w") x = start.x + start.w - w;
+        }
+        if (y + h > bounds.y + bounds.h) {
+          h = bounds.y + bounds.h - y;
+          w = h * aspect;
+          if (handle === "w") x = start.x + start.w - w;
+        }
+      } else {
+        if (handle === "s") {
+          y = start.y;
+          h = clamp(point.y - y, MIN_CROP / aspect, bounds.y + bounds.h - y);
+        } else {
+          const bottom = start.y + start.h;
+          h = clamp(bottom - point.y, MIN_CROP / aspect, bottom - bounds.y);
+          y = bottom - h;
+        }
+        w = h * aspect;
+        x = centerX - w / 2;
+        if (x < bounds.x) {
+          x = bounds.x;
+          w = Math.min(w, bounds.w);
+          h = w / aspect;
+          if (handle === "n") y = start.y + start.h - h;
+        }
+        if (x + w > bounds.x + bounds.w) {
+          w = bounds.x + bounds.w - x;
+          h = w / aspect;
+          if (handle === "n") y = start.y + start.h - h;
+        }
+      }
+
+      return clampCropToImage({ x, y, w, h });
+    }
+
+    function resizeAspect(handle, point, start) {
+      if (handle.length === 1) {
+        return aspectRectFromEdge(handle, point, start);
+      }
+      return clampCropToImage(aspectRectFromCorner(handle, point, start));
+    }
+
+    function resizeCrop(handle, point) {
+      const start = state.drag.startCrop;
+      const next = state.aspect ? resizeAspect(handle, point, start) : resizeFree(handle, point, start);
+      state.crop = clampCropToImage(next);
+    }
+
+    function dragCrop(point) {
+      const drag = state.drag;
+      const bounds = imageRect();
+      state.crop = {
+        ...drag.startCrop,
+        x: clamp(drag.startCrop.x + point.x - drag.startPoint.x, bounds.x, bounds.x + bounds.w - drag.startCrop.w),
+        y: clamp(drag.startCrop.y + point.y - drag.startPoint.y, bounds.y, bounds.y + bounds.h - drag.startCrop.h)
+      };
+    }
+
+    function createCrop(point) {
+      const drag = state.drag;
+      const start = drag.startPoint;
+      const bounds = imageRect();
+      const fakeStart = {
+        x: start.x,
+        y: start.y,
+        w: 1,
+        h: 1
+      };
+      if (state.aspect) {
+        const handle = point.x >= start.x
+          ? (point.y >= start.y ? "se" : "ne")
+          : (point.y >= start.y ? "sw" : "nw");
+        state.crop = resizeAspect(handle, point, fakeStart);
+      } else {
+        const x = clamp(Math.min(start.x, point.x), bounds.x, bounds.x + bounds.w - MIN_CROP);
+        const y = clamp(Math.min(start.y, point.y), bounds.y, bounds.y + bounds.h - MIN_CROP);
+        const w = clamp(Math.abs(point.x - start.x), MIN_CROP, bounds.x + bounds.w - x);
+        const h = clamp(Math.abs(point.y - start.y), MIN_CROP, bounds.y + bounds.h - y);
+        state.crop = { x, y, w, h };
+      }
+    }
+
+    function panImage(point) {
+      const drag = state.drag;
+      state.view.x = drag.startView.x + point.x - drag.startPoint.x;
+      state.view.y = drag.startView.y + point.y - drag.startPoint.y;
+      ensureCropFitsImage();
+      constrainImageToCrop();
+    }
+
+    function onPointerDown(event) {
+      if (!state.bitmap || !state.crop) return;
+      const point = canvasPoint(event);
+      const bounds = imageRect();
+      if (!pointInRect(point, bounds) && !pointInRect(point, state.crop)) return;
+
+      canvas.setPointerCapture(event.pointerId);
+      const handle = getHandleAt(point);
+
+      if (state.mode === "move" && !handle) {
+        state.drag = {
+          type: "pan",
+          startPoint: point,
+          startView: { ...state.view }
+        };
+        canvas.style.cursor = "grabbing";
+      } else if (handle) {
+        state.drag = {
+          type: "resize",
+          handle,
+          startPoint: point,
+          startCrop: { ...state.crop }
+        };
+        canvas.style.cursor = cursorForHandle(handle);
+      } else if (pointInRect(point, state.crop)) {
+        state.drag = {
+          type: "dragCrop",
+          startPoint: point,
+          startCrop: { ...state.crop }
+        };
+        canvas.style.cursor = "move";
+      } else {
+        state.drag = {
+          type: "newCrop",
+          startPoint: point,
+          startCrop: { ...state.crop }
+        };
+        createCrop(point);
+      }
+      render();
+    }
+
+    function onPointerMove(event) {
+      if (!state.bitmap || !state.crop) return;
+      const point = canvasPoint(event);
+
+      if (!state.drag) {
+        const handle = getHandleAt(point);
+        if (handle) {
+          canvas.style.cursor = cursorForHandle(handle);
+        } else if (state.mode === "move" && pointInRect(point, imageRect())) {
+          canvas.style.cursor = "grab";
+        } else if (pointInRect(point, state.crop)) {
+          canvas.style.cursor = "move";
+        } else if (pointInRect(point, imageRect())) {
+          canvas.style.cursor = "crosshair";
+        } else {
+          canvas.style.cursor = "default";
+        }
+        return;
+      }
+
+      if (state.drag.type === "pan") {
+        panImage(point);
+      } else if (state.drag.type === "resize") {
+        resizeCrop(state.drag.handle, point);
+      } else if (state.drag.type === "dragCrop") {
+        dragCrop(point);
+      } else if (state.drag.type === "newCrop") {
+        createCrop(point);
+      }
+      render();
+    }
+
+    function onPointerUp(event) {
+      if (state.drag) {
+        state.drag = null;
+        canvas.releasePointerCapture(event.pointerId);
+        canvas.style.cursor = state.mode === "move" ? "grab" : "default";
+        render();
+        commitHistory();
+      }
+    }
+
+    function setAspect(key) {
+      state.aspectKey = key;
+      state.aspect = ratios[key];
+      syncRatioButtons();
+      setActivePreset("");
+      if (!state.crop || !state.bitmap) return;
+      if (!state.aspect) {
+        render();
+        commitHistory();
+        return;
+      }
+      const bounds = imageRect();
+      const center = {
+        x: state.crop.x + state.crop.w / 2,
+        y: state.crop.y + state.crop.h / 2
+      };
+      const current = fitAspectInside(state.crop.w, state.crop.h, state.aspect);
+      const max = fitAspectInside(bounds.w, bounds.h, state.aspect);
+      const w = Math.min(Math.max(current.w, MIN_CROP), max.w);
+      const h = w / state.aspect;
+      state.crop = clampCropToImage({
+        x: center.x - w / 2,
+        y: center.y - h / 2,
+        w,
+        h
+      });
+      constrainImageToCrop();
+      render();
+      commitHistory();
+    }
+
+    function setZoom(percent, anchorPoint = null) {
+      if (!state.bitmap || !state.crop) return;
+      const oldScale = state.view.scale;
+      const anchor = anchorPoint || {
+        x: state.crop.x + state.crop.w / 2,
+        y: state.crop.y + state.crop.h / 2
+      };
+      const sourcePoint = {
+        x: (anchor.x - state.view.x) / oldScale,
+        y: (anchor.y - state.view.y) / oldScale
+      };
+      state.zoom = percent / 100;
+      state.view.scale = calculateFitScale() * state.zoom;
+      state.view.x = anchor.x - sourcePoint.x * state.view.scale;
+      state.view.y = anchor.y - sourcePoint.y * state.view.scale;
+      ensureCropFitsImage();
+      constrainImageToCrop();
+      zoomRange.value = String(percent);
+      zoomValue.textContent = `${percent}%`;
+      render();
+    }
+
+    function zoomWithWheel(event) {
+      if (!state.bitmap || !state.crop) return;
+      event.preventDefault();
+      const current = Math.round(state.zoom * 100);
+      const direction = event.deltaY > 0 ? -1 : 1;
+      const step = event.ctrlKey ? 4 : 8;
+      const next = clamp(current + direction * step, Number(zoomRange.min), Number(zoomRange.max));
+      if (next === current) return;
+      setZoom(next, canvasPoint(event));
+      commitHistory();
+    }
+
+    function rotateImage(delta) {
+      if (!state.image) return;
+      state.rotation = (state.rotation + delta + 360) % 360;
+      buildRotatedBitmap();
+      resetViewAndCrop();
+      commitHistory();
+      setStatus(`已旋转到 ${state.rotation}°`);
+    }
+
+    function updateQualityState() {
+      const lossy = formatSelect.value !== "image/png";
+      qualityRange.disabled = !lossy;
+      qualityValue.textContent = `${qualityRange.value}%`;
+    }
+
+    function extensionForType(type) {
+      if (type === "image/jpeg") return "jpg";
+      if (type === "image/webp") return "webp";
+      return "png";
+    }
+
+    function createOutputCanvas(type = formatSelect.value) {
+      const source = getPixelCropSource();
+      if (!source || !state.bitmap) {
+        return null;
+      }
+
+      const exportSize = getExportSize(source);
+      const out = document.createElement("canvas");
+      out.width = exportSize.width;
+      out.height = exportSize.height;
+      const outCtx = out.getContext("2d");
+      if (type === "image/jpeg") {
+        outCtx.fillStyle = "#ffffff";
+        outCtx.fillRect(0, 0, out.width, out.height);
+      }
+      outCtx.imageSmoothingEnabled = exportSize.scale !== 1;
+      outCtx.imageSmoothingQuality = "high";
+      outCtx.drawImage(
+        state.bitmap,
+        source.sx,
+        source.sy,
+        source.sw,
+        source.sh,
+        0,
+        0,
+        out.width,
+        out.height
+      );
+      return out;
+    }
+
+    function canvasToBlob(sourceCanvas, type, quality) {
+      return new Promise((resolve) => {
+        sourceCanvas.toBlob(resolve, type, quality);
+      });
+    }
+
+    async function copyCrop() {
+      if (!navigator.clipboard || typeof ClipboardItem === "undefined") {
+        setStatus("当前浏览器不支持复制图片到剪贴板。");
+        return;
+      }
+      const out = createOutputCanvas("image/png");
+      if (!out) {
+        setStatus("还没有可复制的裁剪区域。");
+        return;
+      }
+      const blob = await canvasToBlob(out, "image/png");
+      if (!blob) {
+        setStatus("复制失败，无法生成图片。");
+        return;
+      }
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ "image/png": blob })
+        ]);
+        setStatus(`已复制 ${out.width} x ${out.height}px 图片。`);
+      } catch (error) {
+        setStatus("复制失败，浏览器可能要求 HTTPS 或剪贴板权限。");
+      }
+    }
+
+    function exportCrop() {
+      const type = formatSelect.value;
+      const out = createOutputCanvas(type);
+      if (!out) {
+        setStatus("还没有可导出的裁剪区域。");
+        return;
+      }
+
+      const quality = type === "image/png" ? undefined : Number(qualityRange.value) / 100;
+      out.toBlob((blob) => {
+        if (!blob) {
+          setStatus("导出失败，当前浏览器可能不支持所选格式。");
+          return;
+        }
+        const base = state.imageName.replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]+/g, "-") || "image";
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `${base}-crop.${extensionForType(type)}`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        setStatus(`已导出 ${out.width} x ${out.height}px。`);
+      }, type, quality);
+    }
+
+    function syncCanvasSize() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const width = Math.max(1, Math.round(rect.width));
+      const height = Math.max(1, Math.round(rect.height));
+      if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+      }
+      state.canvas = { width, height, dpr };
+
+      if (state.bitmap) {
+        const source = getCropSource();
+        centerImage();
+        if (source) {
+          state.crop = {
+            x: state.view.x + source.sx * state.view.scale,
+            y: state.view.y + source.sy * state.view.scale,
+            w: source.sw * state.view.scale,
+            h: source.sh * state.view.scale
+          };
+          ensureCropFitsImage();
+          constrainImageToCrop();
+        } else {
+          state.crop = makeCenteredCrop(imageRect());
+        }
+      }
+      render();
+    }
+
+    document.getElementById("uploadBtn").addEventListener("click", () => fileInput.click());
+    document.getElementById("emptyUploadBtn").addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      loadFile(file);
+      fileInput.value = "";
+    });
+
+    stage.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      stage.classList.add("drag-over");
+    });
+    stage.addEventListener("dragleave", () => stage.classList.remove("drag-over"));
+    stage.addEventListener("drop", (event) => {
+      event.preventDefault();
+      stage.classList.remove("drag-over");
+      const file = event.dataTransfer.files && event.dataTransfer.files[0];
+      loadFile(file);
+    });
+
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointercancel", onPointerUp);
+    canvas.addEventListener("wheel", zoomWithWheel, { passive: false });
+    canvas.addEventListener("dblclick", () => {
+      if (state.bitmap) {
+        resetViewAndCrop();
+        commitHistory();
+      }
+    });
+
+    modeButtons.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-mode]");
+      if (!button) return;
+      state.mode = button.dataset.mode;
+      modeButtons.querySelectorAll("button").forEach((item) => {
+        item.classList.toggle("active", item === button);
+      });
+      canvas.style.cursor = state.mode === "move" ? "grab" : "default";
+    });
+
+    ratioButtons.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-ratio]");
+      if (button) setAspect(button.dataset.ratio);
+    });
+
+    presetButtons.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-preset]");
+      if (button) applyPreset(button.dataset.preset);
+    });
+
+    widthInput.addEventListener("input", () => syncLockedDimension(widthInput));
+    heightInput.addEventListener("input", () => syncLockedDimension(heightInput));
+    applySizeBtn.addEventListener("click", () => {
+      const width = parseDimension(widthInput);
+      const height = parseDimension(heightInput);
+      if (!width || !height) {
+        setStatus("请输入有效的宽度和高度。");
+        return;
+      }
+      setActivePreset("");
+      applyOutputSize(width, height);
+    });
+
+    zoomRange.addEventListener("input", () => setZoom(Number(zoomRange.value)));
+    zoomRange.addEventListener("change", commitHistory);
+    qualityRange.addEventListener("input", updateQualityState);
+    formatSelect.addEventListener("change", updateQualityState);
+    scaleSelect.addEventListener("change", renderPreview);
+
+    undoBtn.addEventListener("click", undoEdit);
+    redoBtn.addEventListener("click", redoEdit);
+    rotateLeftBtn.addEventListener("click", () => rotateImage(-90));
+    rotateRightBtn.addEventListener("click", () => rotateImage(90));
+    resetBtn.addEventListener("click", () => {
+      state.rotation = 0;
+      state.zoom = 1;
+      zoomRange.value = "100";
+      zoomValue.textContent = "100%";
+      if (state.image) buildRotatedBitmap();
+      resetViewAndCrop();
+      commitHistory();
+      setStatus("已重置。");
+    });
+    fitBtn.addEventListener("click", () => {
+      state.zoom = 1;
+      zoomRange.value = "100";
+      zoomValue.textContent = "100%";
+      resetViewAndCrop();
+      commitHistory();
+      setStatus("已适合屏幕。");
+    });
+    exportBtn.addEventListener("click", exportCrop);
+    exportBtnTop.addEventListener("click", exportCrop);
+    copyBtn.addEventListener("click", copyCrop);
+
+    document.addEventListener("keydown", (event) => {
+      const tag = document.activeElement && document.activeElement.tagName;
+      const editingText = tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA";
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redoEdit();
+        else undoEdit();
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") {
+        event.preventDefault();
+        redoEdit();
+        return;
+      }
+      if (editingText) return;
+      if (event.key === "Enter" && !exportBtn.disabled) {
+        exportCrop();
+      } else if (event.key.toLowerCase() === "r" && !rotateRightBtn.disabled) {
+        rotateImage(90);
+      }
+    });
+
+    new ResizeObserver(syncCanvasSize).observe(canvas);
+    updateQualityState();
+    updateControls(false);
+    syncCanvasSize();
+  </script>
+</body>
+</html>
