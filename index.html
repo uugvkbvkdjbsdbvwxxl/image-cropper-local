@@ -554,6 +554,118 @@
       gap: 8px;
     }
 
+    .batch-summary {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      min-height: 34px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .batch-summary span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .batch-list,
+    .template-list {
+      display: grid;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .batch-item,
+    .template-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      min-height: 36px;
+      padding: 7px 8px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-3);
+      color: var(--ink);
+      font-size: 12px;
+    }
+
+    .batch-item.active,
+    .template-item.active {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+    }
+
+    .batch-name,
+    .template-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    .batch-item button,
+    .template-item button {
+      min-height: 28px;
+      padding: 0 8px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-3);
+      color: var(--ink);
+      font-size: 12px;
+    }
+
+    .batch-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .template-save {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .template-save input,
+    .target-size-row input {
+      width: 100%;
+      min-height: 40px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-3);
+      color: var(--ink);
+    }
+
+    .template-empty {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .target-size-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: end;
+      margin: 8px 0 14px;
+    }
+
+    #batchExportBtn {
+      width: 100%;
+      margin-top: 8px;
+    }
+
     input[type="range"] {
       width: 100%;
       height: 22px;
@@ -787,6 +899,20 @@
         </section>
 
         <section class="panel-section">
+          <h2 class="section-title">批量</h2>
+          <div class="batch-summary">
+            <span id="batchCountText">未加入队列</span>
+            <span id="batchActiveText">-</span>
+          </div>
+          <div class="batch-list" id="batchList" aria-label="批量图片队列"></div>
+          <div class="button-row batch-actions">
+            <button class="btn" id="prevBatchBtn" type="button" disabled>上一张</button>
+            <button class="btn" id="nextBatchBtn" type="button" disabled>下一张</button>
+            <button class="btn" id="clearBatchBtn" type="button" disabled>清空队列</button>
+          </div>
+        </section>
+
+        <section class="panel-section">
           <h2 class="section-title">比例</h2>
           <div class="ratio-grid" id="ratioButtons">
             <button type="button" data-ratio="free" class="active">自由</button>
@@ -794,6 +920,7 @@
             <button type="button" data-ratio="4:3">4:3</button>
             <button type="button" data-ratio="16:9">16:9</button>
             <button type="button" data-ratio="3:4">3:4</button>
+            <button type="button" data-ratio="9:16">9:16</button>
           </div>
         </section>
 
@@ -826,6 +953,15 @@
           <div class="button-row" style="margin-top: 12px;">
             <button class="btn" id="applySizeBtn" type="button" disabled>应用尺寸</button>
           </div>
+        </section>
+
+        <section class="panel-section">
+          <h2 class="section-title">模板</h2>
+          <div class="template-save">
+            <input id="templateNameInput" type="text" maxlength="18" placeholder="模板名称，如 商品主图" disabled>
+            <button class="btn" id="saveTemplateBtn" type="button" disabled>保存</button>
+          </div>
+          <div class="template-list" id="templateList" aria-label="自定义尺寸模板"></div>
         </section>
 
         <section class="panel-section">
@@ -865,6 +1001,17 @@
               <span class="value-chip" id="qualityValue">96%</span>
             </div>
           </div>
+          <label class="check-row" for="targetSizeToggle">
+            <input id="targetSizeToggle" type="checkbox">
+            压缩到目标大小
+          </label>
+          <div class="target-size-row">
+            <div class="number-field">
+              <label for="targetSizeInput">目标 KB</label>
+              <input id="targetSizeInput" type="number" min="20" step="10" value="500" inputmode="numeric" disabled>
+            </div>
+            <span class="kbd-hint" id="targetSizeHint">JPEG/WebP 可用</span>
+          </div>
           <div class="button-row export-actions">
             <button class="btn primary" id="exportBtn" type="button" disabled>
               <span aria-hidden="true">↓</span>
@@ -875,12 +1022,13 @@
               复制图片
             </button>
           </div>
+          <button class="btn" id="batchExportBtn" type="button" disabled>批量下载队列</button>
         </section>
       </aside>
     </main>
   </div>
 
-  <input class="file-input" id="fileInput" type="file" accept="image/*">
+  <input class="file-input" id="fileInput" type="file" accept="image/*" multiple>
 
   <script>
     const canvas = document.getElementById("editorCanvas");
@@ -915,6 +1063,19 @@
     const heightInput = document.getElementById("heightInput");
     const lockRatioInput = document.getElementById("lockRatioInput");
     const applySizeBtn = document.getElementById("applySizeBtn");
+    const batchCountText = document.getElementById("batchCountText");
+    const batchActiveText = document.getElementById("batchActiveText");
+    const batchList = document.getElementById("batchList");
+    const prevBatchBtn = document.getElementById("prevBatchBtn");
+    const nextBatchBtn = document.getElementById("nextBatchBtn");
+    const clearBatchBtn = document.getElementById("clearBatchBtn");
+    const batchExportBtn = document.getElementById("batchExportBtn");
+    const templateNameInput = document.getElementById("templateNameInput");
+    const saveTemplateBtn = document.getElementById("saveTemplateBtn");
+    const templateList = document.getElementById("templateList");
+    const targetSizeToggle = document.getElementById("targetSizeToggle");
+    const targetSizeInput = document.getElementById("targetSizeInput");
+    const targetSizeHint = document.getElementById("targetSizeHint");
 
     const state = {
       image: null,
@@ -928,7 +1089,10 @@
       canvas: { width: 0, height: 0, dpr: 1 },
       view: { x: 0, y: 0, scale: 1 },
       crop: null,
-      drag: null
+      drag: null,
+      batch: [],
+      activeBatchId: null,
+      batchExporting: false
     };
 
     const history = {
@@ -941,12 +1105,15 @@
     const HANDLE_SIZE = 13;
     const MIN_CROP = 34;
     const HISTORY_LIMIT = 80;
+    const TEMPLATE_STORAGE_KEY = "localImageCropper.templates.v1";
+    const BATCH_DELAY_MS = 160;
     const ratios = {
       "free": null,
       "1:1": 1,
       "4:3": 4 / 3,
       "16:9": 16 / 9,
-      "3:4": 3 / 4
+      "3:4": 3 / 4,
+      "9:16": 9 / 16
     };
 
     const presets = {
@@ -957,10 +1124,214 @@
       "1920x1080": { width: 1920, height: 1080, label: "横屏" },
       "1200x1200": { width: 1200, height: 1200, label: "方图" }
     };
+    let customTemplates = [];
 
     function clamp(value, min, max) {
       if (max < min) return min;
       return Math.min(Math.max(value, min), max);
+    }
+
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes) || bytes <= 0) return "0 KB";
+      if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+      return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    }
+
+    function safeStorageRead(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (error) {
+        return fallback;
+      }
+    }
+
+    function safeStorageWrite(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function loadCustomTemplates() {
+      const stored = safeStorageRead(TEMPLATE_STORAGE_KEY, []);
+      customTemplates = Array.isArray(stored)
+        ? stored
+          .filter((item) => item && Number(item.width) > 0 && Number(item.height) > 0)
+          .map((item) => ({
+            id: String(item.id || `${Date.now()}-${Math.random()}`),
+            name: String(item.name || "自定义模板").slice(0, 18),
+            width: Math.round(Number(item.width)),
+            height: Math.round(Number(item.height))
+          }))
+        : [];
+    }
+
+    function saveCustomTemplates() {
+      return safeStorageWrite(TEMPLATE_STORAGE_KEY, customTemplates);
+    }
+
+    function renderTemplateList() {
+      if (!templateList) return;
+      templateList.textContent = "";
+      if (!customTemplates.length) {
+        const empty = document.createElement("div");
+        empty.className = "template-empty";
+        empty.textContent = "暂无自定义模板。输入名称后保存当前宽高。";
+        templateList.appendChild(empty);
+        return;
+      }
+
+      customTemplates.forEach((template) => {
+        const row = document.createElement("div");
+        row.className = "template-item";
+        row.dataset.templateId = template.id;
+
+        const label = document.createElement("button");
+        label.type = "button";
+        label.className = "template-name";
+        label.textContent = `${template.name} ${template.width}x${template.height}`;
+        label.addEventListener("click", () => applyTemplate(template.id));
+
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.textContent = "删除";
+        remove.addEventListener("click", () => removeTemplate(template.id));
+
+        row.append(label, remove);
+        templateList.appendChild(row);
+      });
+    }
+
+    function saveCurrentTemplate() {
+      const width = parseDimension(widthInput);
+      const height = parseDimension(heightInput);
+      const name = templateNameInput.value.trim() || `${width}x${height}`;
+      if (!width || !height) {
+        setStatus("请先设置有效的宽高再保存模板。");
+        return;
+      }
+      const template = {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        name: name.slice(0, 18),
+        width,
+        height
+      };
+      customTemplates = [template, ...customTemplates].slice(0, 12);
+      if (!saveCustomTemplates()) {
+        setStatus("模板保存失败，浏览器可能限制了本地存储。");
+        return;
+      }
+      templateNameInput.value = "";
+      renderTemplateList();
+      setStatus(`已保存模板：${template.name} ${width} x ${height}px。`);
+    }
+
+    function applyTemplate(id) {
+      const template = customTemplates.find((item) => item.id === id);
+      if (!template) return;
+      widthInput.value = String(template.width);
+      heightInput.value = String(template.height);
+      if (!state.bitmap) {
+        setStatus("请先选择图片，再应用模板。");
+        return;
+      }
+      setActivePreset("");
+      const applied = applyOutputSize(template.width, template.height, template.name);
+      if (!applied && state.bitmap) {
+        applyAspectMax(template.width / template.height, template.name);
+      }
+    }
+
+    function removeTemplate(id) {
+      customTemplates = customTemplates.filter((item) => item.id !== id);
+      saveCustomTemplates();
+      renderTemplateList();
+      setStatus("已删除模板。");
+    }
+
+    function createBatchItem(file) {
+      return {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        file,
+        name: file.name || "image",
+        size: file.size || 0
+      };
+    }
+
+    function activeBatchIndex() {
+      return state.batch.findIndex((item) => item.id === state.activeBatchId);
+    }
+
+    function renderBatchList() {
+      if (!batchList) return;
+      const count = state.batch.length;
+      const activeIndex = activeBatchIndex();
+      batchCountText.textContent = count ? `${count} 张图片` : "未加入队列";
+      batchActiveText.textContent = activeIndex >= 0 ? `${activeIndex + 1}/${count}` : "-";
+      prevBatchBtn.disabled = count <= 1 || activeIndex <= 0 || state.batchExporting;
+      nextBatchBtn.disabled = count <= 1 || activeIndex < 0 || activeIndex >= count - 1 || state.batchExporting;
+      clearBatchBtn.disabled = count === 0 || state.batchExporting;
+      batchExportBtn.disabled = count === 0 || !state.bitmap || state.batchExporting;
+
+      batchList.textContent = "";
+      if (!count) return;
+
+      state.batch.forEach((item, index) => {
+        const row = document.createElement("div");
+        row.className = `batch-item${item.id === state.activeBatchId ? " active" : ""}`;
+
+        const name = document.createElement("button");
+        name.type = "button";
+        name.className = "batch-name";
+        name.textContent = `${index + 1}. ${item.name}`;
+        name.title = `${item.name} (${formatBytes(item.size)})`;
+        name.disabled = state.batchExporting;
+        name.addEventListener("click", () => loadBatchItem(item.id));
+
+        const size = document.createElement("span");
+        size.textContent = formatBytes(item.size);
+        size.style.color = "var(--muted)";
+
+        row.append(name, size);
+        batchList.appendChild(row);
+      });
+    }
+
+    function addFiles(fileList) {
+      const files = Array.from(fileList || []).filter((file) => file && file.type.startsWith("image/"));
+      if (!files.length) {
+        setStatus("请选择浏览器支持的图片文件。");
+        return;
+      }
+      const items = files.map(createBatchItem);
+      state.batch.push(...items);
+      renderBatchList();
+      loadBatchItem(items[0].id);
+      setStatus(files.length > 1 ? `已加入 ${files.length} 张图片。` : `已加入：${items[0].name}`);
+    }
+
+    async function loadBatchItem(id) {
+      const item = state.batch.find((entry) => entry.id === id);
+      if (!item || state.batchExporting) return false;
+      state.activeBatchId = id;
+      renderBatchList();
+      return loadFile(item.file, { batchId: id });
+    }
+
+    function loadAdjacentBatch(delta) {
+      const index = activeBatchIndex();
+      const next = state.batch[index + delta];
+      if (next) loadBatchItem(next.id);
+    }
+
+    function clearBatch() {
+      state.batch = [];
+      state.activeBatchId = null;
+      renderBatchList();
+      setStatus("已清空批量队列。");
     }
 
     function snapshotEditor() {
@@ -1241,7 +1612,10 @@
         widthInput,
         heightInput,
         lockRatioInput,
-        applySizeBtn
+        applySizeBtn,
+        templateNameInput,
+        saveTemplateBtn,
+        targetSizeToggle
       ].forEach((element) => {
         element.disabled = !enabled;
       });
@@ -1251,38 +1625,47 @@
         heightInput.value = "";
         setActivePreset("");
       }
+      updateQualityState();
+      renderBatchList();
+      renderTemplateList();
       updateHistoryControls();
     }
 
-    async function loadFile(file) {
+    async function loadFile(file, options = {}) {
       if (!file || !file.type.startsWith("image/")) {
         setStatus("请选择浏览器支持的图片文件。");
-        return;
+        return false;
       }
 
-      const url = URL.createObjectURL(file);
-      const image = new Image();
-      image.onload = () => {
-        URL.revokeObjectURL(url);
-        state.image = image;
-        state.imageName = file.name || "image";
-        state.rotation = 0;
-        state.zoom = 1;
-        zoomRange.value = "100";
-        zoomValue.textContent = "100%";
-        buildRotatedBitmap();
-        updateControls(true);
-        sourceText.textContent = `${image.naturalWidth} x ${image.naturalHeight}px`;
-        resetViewAndCrop();
-        clearHistory();
-        commitHistory();
-        setStatus(`已载入：${state.imageName}`);
-      };
-      image.onerror = () => {
-        URL.revokeObjectURL(url);
-        setStatus("图片读取失败，请换一张试试。");
-      };
-      image.src = url;
+      return new Promise((resolve) => {
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+        image.onload = () => {
+          URL.revokeObjectURL(url);
+          state.image = image;
+          state.imageName = file.name || "image";
+          if (options.batchId) state.activeBatchId = options.batchId;
+          state.rotation = 0;
+          state.zoom = 1;
+          zoomRange.value = "100";
+          zoomValue.textContent = "100%";
+          buildRotatedBitmap();
+          updateControls(true);
+          sourceText.textContent = `${image.naturalWidth} x ${image.naturalHeight}px`;
+          resetViewAndCrop();
+          clearHistory();
+          commitHistory();
+          renderBatchList();
+          if (!options.silent) setStatus(`已载入：${state.imageName}`);
+          resolve(true);
+        };
+        image.onerror = () => {
+          URL.revokeObjectURL(url);
+          setStatus("图片读取失败，请换一张试试。");
+          resolve(false);
+        };
+        image.src = url;
+      });
     }
 
     function getCropSource() {
@@ -1303,15 +1686,15 @@
     function getPixelCropSource() {
       const source = getCropSource();
       if (!source || !state.bitmap) return null;
-      const sx = clamp(Math.floor(source.sx), 0, state.bitmap.width - 1);
-      const sy = clamp(Math.floor(source.sy), 0, state.bitmap.height - 1);
-      const ex = clamp(Math.ceil(source.sx + source.sw), sx + 1, state.bitmap.width);
-      const ey = clamp(Math.ceil(source.sy + source.sh), sy + 1, state.bitmap.height);
+      const sx = clamp(Math.round(source.sx), 0, state.bitmap.width - 1);
+      const sy = clamp(Math.round(source.sy), 0, state.bitmap.height - 1);
+      const sw = clamp(Math.round(source.sw), 1, state.bitmap.width - sx);
+      const sh = clamp(Math.round(source.sh), 1, state.bitmap.height - sy);
       return {
         sx,
         sy,
-        sw: ex - sx,
-        sh: ey - sy
+        sw,
+        sh
       };
     }
 
@@ -1904,8 +2287,12 @@
 
     function updateQualityState() {
       const lossy = formatSelect.value !== "image/png";
-      qualityRange.disabled = !lossy;
+      const hasImage = Boolean(state.bitmap);
+      qualityRange.disabled = !lossy || !hasImage;
+      targetSizeToggle.disabled = !lossy || !hasImage;
+      targetSizeInput.disabled = !lossy || !hasImage || !targetSizeToggle.checked;
       qualityValue.textContent = `${qualityRange.value}%`;
+      targetSizeHint.textContent = lossy ? "JPEG/WebP 可用" : "PNG 不支持质量压缩";
     }
 
     function extensionForType(type) {
@@ -1951,6 +2338,106 @@
       });
     }
 
+    function getTargetBytes(type = formatSelect.value) {
+      if (type === "image/png" || !targetSizeToggle.checked) return null;
+      const kb = Number(targetSizeInput.value);
+      if (!Number.isFinite(kb) || kb <= 0) return null;
+      return Math.max(1, Math.round(kb * 1024));
+    }
+
+    async function compressCanvasToTarget(sourceCanvas, type, targetBytes, initialQuality) {
+      const highQuality = clamp(initialQuality || 0.92, 0.4, 1);
+      const initialBlob = await canvasToBlob(sourceCanvas, type, highQuality);
+      if (!initialBlob) return null;
+      if (initialBlob.size <= targetBytes) {
+        return {
+          blob: initialBlob,
+          quality: highQuality,
+          targetReached: true
+        };
+      }
+
+      let low = 0.35;
+      let high = highQuality;
+      let best = null;
+      let bestQuality = low;
+      let smallest = initialBlob;
+      let smallestQuality = highQuality;
+
+      for (let i = 0; i < 9; i += 1) {
+        const quality = (low + high) / 2;
+        const blob = await canvasToBlob(sourceCanvas, type, quality);
+        if (!blob) break;
+        if (blob.size < smallest.size) {
+          smallest = blob;
+          smallestQuality = quality;
+        }
+        if (blob.size <= targetBytes) {
+          best = blob;
+          bestQuality = quality;
+          low = quality;
+        } else {
+          high = quality;
+        }
+      }
+
+      return {
+        blob: best || smallest,
+        quality: best ? bestQuality : smallestQuality,
+        targetReached: Boolean(best)
+      };
+    }
+
+    async function createExportBlob(type = formatSelect.value) {
+      const out = createOutputCanvas(type);
+      if (!out) return null;
+
+      const quality = type === "image/png" ? undefined : Number(qualityRange.value) / 100;
+      const targetBytes = getTargetBytes(type);
+      let result = null;
+
+      if (targetBytes) {
+        result = await compressCanvasToTarget(out, type, targetBytes, quality);
+      } else {
+        const blob = await canvasToBlob(out, type, quality);
+        if (blob) {
+          result = {
+            blob,
+            quality,
+            targetReached: true
+          };
+        }
+      }
+
+      if (!result || !result.blob) return null;
+      return {
+        canvas: out,
+        blob: result.blob,
+        quality: result.quality,
+        targetBytes,
+        targetReached: result.targetReached
+      };
+    }
+
+    function cleanBaseName(name) {
+      return (name || "image").replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]+/g, "-") || "image";
+    }
+
+    function downloadBlob(blob, filename) {
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function wait(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
     async function copyCrop() {
       if (!navigator.clipboard || typeof ClipboardItem === "undefined") {
         setStatus("当前浏览器不支持复制图片到剪贴板。");
@@ -1976,31 +2463,71 @@
       }
     }
 
-    function exportCrop() {
+    async function exportCrop() {
       const type = formatSelect.value;
-      const out = createOutputCanvas(type);
-      if (!out) {
+      const result = await createExportBlob(type);
+      if (!result) {
         setStatus("还没有可导出的裁剪区域。");
         return;
       }
 
-      const quality = type === "image/png" ? undefined : Number(qualityRange.value) / 100;
-      out.toBlob((blob) => {
-        if (!blob) {
-          setStatus("导出失败，当前浏览器可能不支持所选格式。");
-          return;
+      const base = cleanBaseName(state.imageName);
+      downloadBlob(result.blob, `${base}-crop.${extensionForType(type)}`);
+      const sizeInfo = `，${formatBytes(result.blob.size)}`;
+      const targetInfo = result.targetBytes
+        ? result.targetReached
+          ? `，已压缩到 ${formatBytes(result.targetBytes)} 内`
+          : "，已到最低质量但仍超过目标"
+        : "";
+      setStatus(`已导出 ${result.canvas.width} x ${result.canvas.height}px${sizeInfo}${targetInfo}。`);
+    }
+
+    async function exportBatch() {
+      if (!state.batch.length || state.batchExporting) return;
+      const type = formatSelect.value;
+      const targetWidth = parseDimension(widthInput);
+      const targetHeight = parseDimension(heightInput);
+      const currentId = state.activeBatchId;
+      const total = state.batch.length;
+      let exported = 0;
+
+      state.batchExporting = true;
+      renderBatchList();
+      try {
+        for (let index = 0; index < total; index += 1) {
+          const item = state.batch[index];
+          setStatus(`正在批量导出 ${index + 1}/${total}：${item.name}`);
+          const loaded = await loadFile(item.file, { batchId: item.id, silent: true });
+          if (!loaded) continue;
+
+          if (targetWidth && targetHeight) {
+            widthInput.value = String(targetWidth);
+            heightInput.value = String(targetHeight);
+            const applied = applyOutputSize(targetWidth, targetHeight, "批量尺寸");
+            if (!applied) applyAspectMax(targetWidth / targetHeight, "批量尺寸");
+          }
+
+          const result = await createExportBlob(type);
+          if (!result) continue;
+          const base = cleanBaseName(item.name);
+          downloadBlob(result.blob, `${base}-crop.${extensionForType(type)}`);
+          exported += 1;
+          await wait(BATCH_DELAY_MS);
         }
-        const base = state.imageName.replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]+/g, "-") || "image";
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.download = `${base}-crop.${extensionForType(type)}`;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-        setStatus(`已导出 ${out.width} x ${out.height}px。`);
-      }, type, quality);
+      } finally {
+        state.batchExporting = false;
+        renderBatchList();
+        if (currentId && state.batch.some((item) => item.id === currentId)) {
+          await loadBatchItem(currentId);
+          if (targetWidth && targetHeight) {
+            widthInput.value = String(targetWidth);
+            heightInput.value = String(targetHeight);
+            const applied = applyOutputSize(targetWidth, targetHeight, "批量尺寸");
+            if (!applied) applyAspectMax(targetWidth / targetHeight, "批量尺寸");
+          }
+        }
+      }
+      setStatus(`批量导出完成：${exported}/${total} 张。`);
     }
 
     function syncCanvasSize() {
@@ -2036,8 +2563,7 @@
     document.getElementById("uploadBtn").addEventListener("click", () => fileInput.click());
     document.getElementById("emptyUploadBtn").addEventListener("click", () => fileInput.click());
     fileInput.addEventListener("change", (event) => {
-      const file = event.target.files && event.target.files[0];
-      loadFile(file);
+      addFiles(event.target.files);
       fileInput.value = "";
     });
 
@@ -2049,8 +2575,7 @@
     stage.addEventListener("drop", (event) => {
       event.preventDefault();
       stage.classList.remove("drag-over");
-      const file = event.dataTransfer.files && event.dataTransfer.files[0];
-      loadFile(file);
+      addFiles(event.dataTransfer.files);
     });
 
     canvas.addEventListener("pointerdown", onPointerDown);
@@ -2085,6 +2610,15 @@
       if (button) applyPreset(button.dataset.preset);
     });
 
+    prevBatchBtn.addEventListener("click", () => loadAdjacentBatch(-1));
+    nextBatchBtn.addEventListener("click", () => loadAdjacentBatch(1));
+    clearBatchBtn.addEventListener("click", clearBatch);
+    batchExportBtn.addEventListener("click", exportBatch);
+    saveTemplateBtn.addEventListener("click", saveCurrentTemplate);
+    templateNameInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") saveCurrentTemplate();
+    });
+
     widthInput.addEventListener("input", () => syncLockedDimension(widthInput));
     heightInput.addEventListener("input", () => syncLockedDimension(heightInput));
     applySizeBtn.addEventListener("click", () => {
@@ -2103,6 +2637,8 @@
     qualityRange.addEventListener("input", updateQualityState);
     formatSelect.addEventListener("change", updateQualityState);
     scaleSelect.addEventListener("change", renderPreview);
+    targetSizeToggle.addEventListener("change", updateQualityState);
+    targetSizeInput.addEventListener("input", updateQualityState);
 
     undoBtn.addEventListener("click", undoEdit);
     redoBtn.addEventListener("click", redoEdit);
@@ -2153,6 +2689,9 @@
     });
 
     new ResizeObserver(syncCanvasSize).observe(canvas);
+    loadCustomTemplates();
+    renderTemplateList();
+    renderBatchList();
     updateQualityState();
     updateControls(false);
     syncCanvasSize();
