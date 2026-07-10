@@ -661,6 +661,80 @@
       margin: 8px 0 14px;
     }
 
+    .section-heading-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .section-heading-row .section-title {
+      margin: 0;
+    }
+
+    .compact-btn {
+      min-height: 30px;
+      padding-inline: 9px;
+      font-size: 12px;
+    }
+
+    .adjustment-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .adjustment-stack .control {
+      margin: 0;
+    }
+
+    .watermark-source {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .watermark-source[hidden] {
+      display: none;
+    }
+
+    .text-field {
+      width: 100%;
+      min-height: 40px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface-3);
+      color: var(--ink);
+    }
+
+    .watermark-upload-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .watermark-file-name {
+      min-width: 0;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 12px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .watermark-options {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .watermark-options .control {
+      margin: 0;
+    }
+
     #batchExportBtn {
       width: 100%;
       margin-top: 8px;
@@ -941,6 +1015,7 @@
     .number-field input,
     .template-save input,
     .target-size-row input,
+    .text-field,
     select {
       border-color: var(--line);
       border-radius: 11px;
@@ -1091,6 +1166,10 @@
       }
 
       .meta-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .watermark-options {
         grid-template-columns: 1fr;
       }
 
@@ -1285,6 +1364,99 @@
         </section>
 
         <section class="panel-section">
+          <div class="section-heading-row">
+            <h2 class="section-title">基础调色</h2>
+            <button class="btn compact-btn" id="resetAdjustmentsBtn" type="button" disabled>重置调色</button>
+          </div>
+          <div class="adjustment-stack">
+            <div class="control">
+              <label for="brightnessRange">亮度</label>
+              <div class="range-row">
+                <input id="brightnessRange" type="range" min="-100" max="100" value="0" step="1" disabled>
+                <span class="value-chip" id="brightnessValue">0</span>
+              </div>
+            </div>
+            <div class="control">
+              <label for="contrastRange">对比度</label>
+              <div class="range-row">
+                <input id="contrastRange" type="range" min="-100" max="100" value="0" step="1" disabled>
+                <span class="value-chip" id="contrastValue">0</span>
+              </div>
+            </div>
+            <div class="control">
+              <label for="saturationRange">饱和度</label>
+              <div class="range-row">
+                <input id="saturationRange" type="range" min="-100" max="100" value="0" step="1" disabled>
+                <span class="value-chip" id="saturationValue">0</span>
+              </div>
+            </div>
+            <div class="control">
+              <label for="sharpenRange">锐化</label>
+              <div class="range-row">
+                <input id="sharpenRange" type="range" min="0" max="100" value="0" step="1" disabled>
+                <span class="value-chip" id="sharpenValue">0</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading-row">
+            <h2 class="section-title">水印</h2>
+            <button class="btn compact-btn" id="resetWatermarkBtn" type="button" disabled>清除水印</button>
+          </div>
+          <div class="control">
+            <label for="watermarkTypeSelect">类型</label>
+            <select id="watermarkTypeSelect" disabled>
+              <option value="none">无水印</option>
+              <option value="text">文字水印</option>
+              <option value="image">图片水印</option>
+            </select>
+          </div>
+          <div class="watermark-source" id="textWatermarkControls" hidden>
+            <label class="inline-label" for="watermarkTextInput">水印文字</label>
+            <input class="text-field" id="watermarkTextInput" type="text" maxlength="80" placeholder="输入水印文字" disabled>
+          </div>
+          <div class="watermark-source" id="imageWatermarkControls" hidden>
+            <span class="inline-label">水印图片</span>
+            <div class="watermark-upload-row">
+              <span class="watermark-file-name" id="watermarkFileName">尚未选择图片</span>
+              <button class="btn compact-btn" id="watermarkUploadBtn" type="button" disabled>选择图片</button>
+            </div>
+          </div>
+          <div class="watermark-options">
+            <div class="control">
+              <label for="watermarkPositionSelect">位置</label>
+              <select id="watermarkPositionSelect" disabled>
+                <option value="top-left">左上</option>
+                <option value="top-center">顶部居中</option>
+                <option value="top-right">右上</option>
+                <option value="center-left">左侧居中</option>
+                <option value="center">正中</option>
+                <option value="center-right">右侧居中</option>
+                <option value="bottom-left">左下</option>
+                <option value="bottom-center">底部居中</option>
+                <option value="bottom-right" selected>右下</option>
+              </select>
+            </div>
+            <div class="control">
+              <label for="watermarkOpacityRange">透明度</label>
+              <div class="range-row">
+                <input id="watermarkOpacityRange" type="range" min="5" max="100" value="65" step="1" disabled>
+                <span class="value-chip" id="watermarkOpacityValue">65%</span>
+              </div>
+            </div>
+          </div>
+          <div class="control" style="margin-top: 14px;">
+            <label for="watermarkSizeRange">大小</label>
+            <div class="range-row">
+              <input id="watermarkSizeRange" type="range" min="6" max="48" value="20" step="1" disabled>
+              <span class="value-chip" id="watermarkSizeValue">20%</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel-section">
           <h2 class="section-title">导出</h2>
           <div class="control">
             <label for="formatSelect">格式</label>
@@ -1337,6 +1509,7 @@
   </div>
 
   <input class="file-input" id="fileInput" type="file" accept="image/*" multiple>
+  <input class="file-input" id="watermarkFileInput" type="file" accept="image/png,image/jpeg,image/webp">
 
   <script>
     const canvas = document.getElementById("editorCanvas");
@@ -1384,6 +1557,28 @@
     const targetSizeToggle = document.getElementById("targetSizeToggle");
     const targetSizeInput = document.getElementById("targetSizeInput");
     const targetSizeHint = document.getElementById("targetSizeHint");
+    const brightnessRange = document.getElementById("brightnessRange");
+    const contrastRange = document.getElementById("contrastRange");
+    const saturationRange = document.getElementById("saturationRange");
+    const sharpenRange = document.getElementById("sharpenRange");
+    const brightnessValue = document.getElementById("brightnessValue");
+    const contrastValue = document.getElementById("contrastValue");
+    const saturationValue = document.getElementById("saturationValue");
+    const sharpenValue = document.getElementById("sharpenValue");
+    const resetAdjustmentsBtn = document.getElementById("resetAdjustmentsBtn");
+    const watermarkTypeSelect = document.getElementById("watermarkTypeSelect");
+    const watermarkTextInput = document.getElementById("watermarkTextInput");
+    const watermarkPositionSelect = document.getElementById("watermarkPositionSelect");
+    const watermarkOpacityRange = document.getElementById("watermarkOpacityRange");
+    const watermarkOpacityValue = document.getElementById("watermarkOpacityValue");
+    const watermarkSizeRange = document.getElementById("watermarkSizeRange");
+    const watermarkSizeValue = document.getElementById("watermarkSizeValue");
+    const textWatermarkControls = document.getElementById("textWatermarkControls");
+    const imageWatermarkControls = document.getElementById("imageWatermarkControls");
+    const watermarkUploadBtn = document.getElementById("watermarkUploadBtn");
+    const watermarkFileInput = document.getElementById("watermarkFileInput");
+    const watermarkFileName = document.getElementById("watermarkFileName");
+    const resetWatermarkBtn = document.getElementById("resetWatermarkBtn");
 
     const state = {
       image: null,
@@ -1400,7 +1595,22 @@
       drag: null,
       batch: [],
       activeBatchId: null,
-      batchExporting: false
+      batchExporting: false,
+      adjustments: {
+        brightness: 0,
+        contrast: 0,
+        saturation: 0,
+        sharpen: 0
+      },
+      watermark: {
+        type: "none",
+        text: "",
+        image: null,
+        imageName: "",
+        opacity: 65,
+        position: "bottom-right",
+        size: 20
+      }
     };
 
     const history = {
@@ -1415,6 +1625,21 @@
     const HISTORY_LIMIT = 80;
     const TEMPLATE_STORAGE_KEY = "localImageCropper.templates.v1";
     const BATCH_DELAY_MS = 160;
+    const DEFAULT_ADJUSTMENTS = Object.freeze({
+      brightness: 0,
+      contrast: 0,
+      saturation: 0,
+      sharpen: 0
+    });
+    const DEFAULT_WATERMARK = Object.freeze({
+      type: "none",
+      text: "",
+      image: null,
+      imageName: "",
+      opacity: 65,
+      position: "bottom-right",
+      size: 20
+    });
     const ratios = {
       "free": null,
       "1:1": 1,
@@ -1437,6 +1662,156 @@
     function clamp(value, min, max) {
       if (max < min) return min;
       return Math.min(Math.max(value, min), max);
+    }
+
+    function cloneAdjustments() {
+      return { ...state.adjustments };
+    }
+
+    function cloneWatermark() {
+      return { ...state.watermark };
+    }
+
+    function adjustmentFilter() {
+      const brightness = clamp(100 + Number(state.adjustments.brightness), 0, 200);
+      const contrast = clamp(100 + Number(state.adjustments.contrast), 0, 200);
+      const saturation = clamp(100 + Number(state.adjustments.saturation), 0, 200);
+      return `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
+    }
+
+    function drawAdjustedImage(targetCtx, ...args) {
+      targetCtx.save();
+      targetCtx.filter = adjustmentFilter();
+      targetCtx.imageSmoothingEnabled = true;
+      targetCtx.imageSmoothingQuality = "high";
+      targetCtx.drawImage(...args);
+      targetCtx.restore();
+    }
+
+    function applySharpenToContext(targetCtx, x, y, width, height) {
+      const amount = clamp(Number(state.adjustments.sharpen) / 100, 0, 1) * 0.72;
+      if (!amount || width < 3 || height < 3) return;
+
+      const canvasWidth = targetCtx.canvas.width;
+      const canvasHeight = targetCtx.canvas.height;
+      const sx = clamp(Math.floor(x), 0, Math.max(0, canvasWidth - 1));
+      const sy = clamp(Math.floor(y), 0, Math.max(0, canvasHeight - 1));
+      const sw = clamp(Math.ceil(width), 1, canvasWidth - sx);
+      const sh = clamp(Math.ceil(height), 1, canvasHeight - sy);
+      if (sw < 3 || sh < 3) return;
+
+      let imageData;
+      try {
+        imageData = targetCtx.getImageData(sx, sy, sw, sh);
+      } catch (error) {
+        return;
+      }
+      const pixels = imageData.data;
+      const source = new Uint8ClampedArray(pixels);
+      const centerWeight = 1 + amount * 4;
+
+      for (let row = 1; row < sh - 1; row += 1) {
+        for (let column = 1; column < sw - 1; column += 1) {
+          const index = (row * sw + column) * 4;
+          const left = index - 4;
+          const right = index + 4;
+          const above = index - sw * 4;
+          const below = index + sw * 4;
+          if (source[index + 3] < 250 || source[left + 3] < 250 || source[right + 3] < 250 ||
+            source[above + 3] < 250 || source[below + 3] < 250) continue;
+          for (let channel = 0; channel < 3; channel += 1) {
+            pixels[index + channel] = clamp(
+              source[index + channel] * centerWeight - amount * (
+                source[left + channel] + source[right + channel] +
+                source[above + channel] + source[below + channel]
+              ),
+              0,
+              255
+            );
+          }
+        }
+      }
+      targetCtx.putImageData(imageData, sx, sy);
+    }
+
+    function hasRenderableWatermark() {
+      if (state.watermark.type === "text") return Boolean(state.watermark.text.trim());
+      if (state.watermark.type === "image") return Boolean(state.watermark.image);
+      return false;
+    }
+
+    function positionWatermarkBox(rect, width, height) {
+      const position = state.watermark.position;
+      const padding = Math.max(6, Math.min(rect.width, rect.height) * 0.035);
+      const vertical = position.startsWith("top")
+        ? "top"
+        : position.startsWith("bottom")
+          ? "bottom"
+          : "center";
+      const horizontal = position.endsWith("left")
+        ? "left"
+        : position.endsWith("right")
+          ? "right"
+          : "center";
+      let x = rect.x + (rect.width - width) / 2;
+      let y = rect.y + (rect.height - height) / 2;
+      if (horizontal === "left") x = rect.x + padding;
+      if (horizontal === "right") x = rect.x + rect.width - width - padding;
+      if (vertical === "top") y = rect.y + padding;
+      if (vertical === "bottom") y = rect.y + rect.height - height - padding;
+      return { x, y };
+    }
+
+    function drawWatermark(targetCtx, rect) {
+      if (!hasRenderableWatermark() || rect.width <= 0 || rect.height <= 0) return;
+      targetCtx.save();
+      targetCtx.beginPath();
+      targetCtx.rect(rect.x, rect.y, rect.width, rect.height);
+      targetCtx.clip();
+      targetCtx.globalAlpha = clamp(Number(state.watermark.opacity) / 100, 0.05, 1);
+
+      if (state.watermark.type === "image") {
+        const image = state.watermark.image;
+        const ratio = image.naturalWidth / image.naturalHeight || 1;
+        let width = rect.width * clamp(Number(state.watermark.size), 6, 48) / 100;
+        let height = width / ratio;
+        const maxHeight = rect.height * 0.72;
+        if (height > maxHeight) {
+          height = maxHeight;
+          width = height * ratio;
+        }
+        const position = positionWatermarkBox(rect, width, height);
+        targetCtx.imageSmoothingEnabled = true;
+        targetCtx.imageSmoothingQuality = "high";
+        targetCtx.drawImage(image, position.x, position.y, width, height);
+      } else {
+        const text = state.watermark.text.trim();
+        let fontSize = clamp(
+          rect.width * clamp(Number(state.watermark.size), 6, 48) / 100 * 0.45,
+          10,
+          rect.height * 0.28
+        );
+        const fontFamily = '"Segoe UI Variable", "Microsoft YaHei UI", sans-serif';
+        targetCtx.font = `700 ${fontSize}px ${fontFamily}`;
+        const maxWidth = rect.width * 0.82;
+        const measured = targetCtx.measureText(text).width;
+        if (measured > maxWidth) {
+          fontSize = Math.max(8, fontSize * maxWidth / measured);
+          targetCtx.font = `700 ${fontSize}px ${fontFamily}`;
+        }
+        const width = Math.min(maxWidth, targetCtx.measureText(text).width);
+        const height = fontSize * 1.2;
+        const position = positionWatermarkBox(rect, width, height);
+        targetCtx.textAlign = "left";
+        targetCtx.textBaseline = "top";
+        targetCtx.lineJoin = "round";
+        targetCtx.lineWidth = Math.max(1, fontSize * 0.08);
+        targetCtx.strokeStyle = "rgba(0, 0, 0, 0.58)";
+        targetCtx.fillStyle = "rgba(255, 255, 255, 0.98)";
+        targetCtx.strokeText(text, position.x, position.y, maxWidth);
+        targetCtx.fillText(text, position.x, position.y, maxWidth);
+      }
+      targetCtx.restore();
     }
 
     function formatBytes(bytes) {
@@ -1650,7 +2025,9 @@
         aspectKey: state.aspectKey,
         aspect: state.aspect,
         view: { ...state.view },
-        crop: { ...state.crop }
+        crop: { ...state.crop },
+        adjustments: cloneAdjustments(),
+        watermark: cloneWatermark()
       };
     }
 
@@ -1670,6 +2047,16 @@
           y: Number(snapshot.crop.y.toFixed(3)),
           w: Number(snapshot.crop.w.toFixed(3)),
           h: Number(snapshot.crop.h.toFixed(3))
+        },
+        adjustments: snapshot.adjustments,
+        watermark: {
+          type: snapshot.watermark.type,
+          text: snapshot.watermark.text,
+          imageName: snapshot.watermark.imageName,
+          hasImage: Boolean(snapshot.watermark.image),
+          opacity: snapshot.watermark.opacity,
+          position: snapshot.watermark.position,
+          size: snapshot.watermark.size
         }
       });
     }
@@ -1728,9 +2115,12 @@
       state.aspect = snapshot.aspect;
       state.view = { ...snapshot.view };
       state.crop = { ...snapshot.crop };
+      state.adjustments = { ...DEFAULT_ADJUSTMENTS, ...snapshot.adjustments };
+      state.watermark = { ...DEFAULT_WATERMARK, ...snapshot.watermark };
       zoomRange.value = String(Math.round(state.zoom * 100));
       zoomValue.textContent = `${Math.round(state.zoom * 100)}%`;
       syncRatioButtons();
+      syncEffectControls();
       setActivePreset("");
       render();
       history.lastKey = serializeSnapshot(snapshot);
@@ -1907,6 +2297,109 @@
       state.bitmap = canvasBitmap;
     }
 
+    function syncAdjustmentControls() {
+      const enabled = Boolean(state.bitmap);
+      const controls = [brightnessRange, contrastRange, saturationRange, sharpenRange];
+      controls.forEach((control) => {
+        control.disabled = !enabled;
+      });
+      resetAdjustmentsBtn.disabled = !enabled;
+      brightnessRange.value = String(state.adjustments.brightness);
+      contrastRange.value = String(state.adjustments.contrast);
+      saturationRange.value = String(state.adjustments.saturation);
+      sharpenRange.value = String(state.adjustments.sharpen);
+      brightnessValue.textContent = Number(state.adjustments.brightness) > 0
+        ? `+${state.adjustments.brightness}`
+        : String(state.adjustments.brightness);
+      contrastValue.textContent = Number(state.adjustments.contrast) > 0
+        ? `+${state.adjustments.contrast}`
+        : String(state.adjustments.contrast);
+      saturationValue.textContent = Number(state.adjustments.saturation) > 0
+        ? `+${state.adjustments.saturation}`
+        : String(state.adjustments.saturation);
+      sharpenValue.textContent = String(state.adjustments.sharpen);
+    }
+
+    function syncWatermarkControls() {
+      const enabled = Boolean(state.bitmap);
+      const active = enabled && state.watermark.type !== "none";
+      watermarkTypeSelect.disabled = !enabled;
+      watermarkTypeSelect.value = state.watermark.type;
+      watermarkTextInput.value = state.watermark.text;
+      watermarkTextInput.disabled = !enabled || state.watermark.type !== "text";
+      watermarkPositionSelect.value = state.watermark.position;
+      watermarkPositionSelect.disabled = !active;
+      watermarkOpacityRange.value = String(state.watermark.opacity);
+      watermarkOpacityRange.disabled = !active;
+      watermarkOpacityValue.textContent = `${state.watermark.opacity}%`;
+      watermarkSizeRange.value = String(state.watermark.size);
+      watermarkSizeRange.disabled = !active;
+      watermarkSizeValue.textContent = `${state.watermark.size}%`;
+      watermarkUploadBtn.disabled = !enabled || state.watermark.type !== "image";
+      watermarkFileName.textContent = state.watermark.imageName || "尚未选择图片";
+      textWatermarkControls.hidden = state.watermark.type !== "text";
+      imageWatermarkControls.hidden = state.watermark.type !== "image";
+      resetWatermarkBtn.disabled = !enabled || (
+        state.watermark.type === "none" && !state.watermark.text && !state.watermark.image
+      );
+    }
+
+    function syncEffectControls() {
+      syncAdjustmentControls();
+      syncWatermarkControls();
+    }
+
+    function updateAdjustment(key, value) {
+      state.adjustments[key] = Number(value);
+      syncAdjustmentControls();
+      render();
+    }
+
+    function resetAdjustments() {
+      state.adjustments = { ...DEFAULT_ADJUSTMENTS };
+      syncAdjustmentControls();
+      render();
+      commitHistory();
+      setStatus("已重置基础调色。");
+    }
+
+    function resetWatermark() {
+      state.watermark = { ...DEFAULT_WATERMARK };
+      watermarkFileInput.value = "";
+      syncWatermarkControls();
+      render();
+      commitHistory();
+      setStatus("已清除水印。");
+    }
+
+    async function loadWatermarkFile(file) {
+      if (!file || !file.type.startsWith("image/")) {
+        setStatus("请选择 PNG、JPEG 或 WebP 水印图片。");
+        return false;
+      }
+      return new Promise((resolve) => {
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+        image.onload = () => {
+          URL.revokeObjectURL(url);
+          state.watermark.image = image;
+          state.watermark.imageName = file.name || "水印图片";
+          state.watermark.type = "image";
+          syncWatermarkControls();
+          render();
+          commitHistory();
+          setStatus(`已载入水印：${state.watermark.imageName}`);
+          resolve(true);
+        };
+        image.onerror = () => {
+          URL.revokeObjectURL(url);
+          setStatus("水印图片读取失败，请换一张试试。");
+          resolve(false);
+        };
+        image.src = url;
+      });
+    }
+
     function updateControls(enabled) {
       [
         exportBtn,
@@ -1934,6 +2427,7 @@
         setActivePreset("");
       }
       updateQualityState();
+      syncEffectControls();
       renderBatchList();
       renderTemplateList();
       updateHistoryControls();
@@ -2189,8 +2683,8 @@
       const dh = source.sh * scale;
       const dx = (shell.width - dw) / 2;
       const dy = (shell.height - dh) / 2;
-      previewCtx.imageSmoothingQuality = "high";
-      previewCtx.drawImage(
+      drawAdjustedImage(
+        previewCtx,
         state.bitmap,
         source.sx,
         source.sy,
@@ -2201,6 +2695,8 @@
         dw,
         dh
       );
+      applySharpenToContext(previewCtx, dx * dpr, dy * dpr, dw * dpr, dh * dpr);
+      drawWatermark(previewCtx, { x: dx, y: dy, width: dw, height: dh });
 
       const exportSize = getExportSize(source);
       sizeText.textContent = exportSize.scale === 1
@@ -2221,14 +2717,27 @@
         return;
       }
 
-      ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(
+      drawAdjustedImage(
+        ctx,
         state.bitmap,
         state.view.x,
         state.view.y,
         state.bitmap.width * state.view.scale,
         state.bitmap.height * state.view.scale
       );
+      applySharpenToContext(
+        ctx,
+        state.crop.x * state.canvas.dpr,
+        state.crop.y * state.canvas.dpr,
+        state.crop.w * state.canvas.dpr,
+        state.crop.h * state.canvas.dpr
+      );
+      drawWatermark(ctx, {
+        x: state.crop.x,
+        y: state.crop.y,
+        width: state.crop.w,
+        height: state.crop.h
+      });
       drawCropOverlay();
       renderPreview();
     }
@@ -2625,8 +3134,8 @@
         outCtx.fillRect(0, 0, out.width, out.height);
       }
       outCtx.imageSmoothingEnabled = exportSize.scale !== 1;
-      outCtx.imageSmoothingQuality = "high";
-      outCtx.drawImage(
+      drawAdjustedImage(
+        outCtx,
         state.bitmap,
         source.sx,
         source.sy,
@@ -2637,6 +3146,8 @@
         out.width,
         out.height
       );
+      applySharpenToContext(outCtx, 0, 0, out.width, out.height);
+      drawWatermark(outCtx, { x: 0, y: 0, width: out.width, height: out.height });
       return out;
     }
 
@@ -2942,6 +3453,72 @@
 
     zoomRange.addEventListener("input", () => setZoom(Number(zoomRange.value)));
     zoomRange.addEventListener("change", commitHistory);
+    [
+      [brightnessRange, "brightness"],
+      [contrastRange, "contrast"],
+      [saturationRange, "saturation"],
+      [sharpenRange, "sharpen"]
+    ].forEach(([control, key]) => {
+      control.addEventListener("input", () => updateAdjustment(key, control.value));
+      control.addEventListener("change", () => {
+        commitHistory();
+        setStatus("已更新基础调色。");
+      });
+    });
+    resetAdjustmentsBtn.addEventListener("click", resetAdjustments);
+
+    watermarkTypeSelect.addEventListener("change", () => {
+      state.watermark.type = watermarkTypeSelect.value;
+      syncWatermarkControls();
+      render();
+      commitHistory();
+      if (state.watermark.type === "image" && !state.watermark.image) {
+        setStatus("请选择一张图片作为水印。");
+      } else if (state.watermark.type === "text" && !state.watermark.text.trim()) {
+        setStatus("请输入水印文字。");
+      } else {
+        setStatus(state.watermark.type === "none" ? "已关闭水印。" : "已更新水印类型。");
+      }
+    });
+    watermarkTextInput.addEventListener("input", () => {
+      state.watermark.text = watermarkTextInput.value;
+      render();
+    });
+    watermarkTextInput.addEventListener("change", () => {
+      commitHistory();
+      setStatus(state.watermark.text.trim() ? "已更新文字水印。" : "请输入水印文字。");
+    });
+    watermarkPositionSelect.addEventListener("change", () => {
+      state.watermark.position = watermarkPositionSelect.value;
+      render();
+      commitHistory();
+      setStatus("已更新水印位置。");
+    });
+    watermarkOpacityRange.addEventListener("input", () => {
+      state.watermark.opacity = Number(watermarkOpacityRange.value);
+      syncWatermarkControls();
+      render();
+    });
+    watermarkOpacityRange.addEventListener("change", () => {
+      commitHistory();
+      setStatus("已更新水印透明度。");
+    });
+    watermarkSizeRange.addEventListener("input", () => {
+      state.watermark.size = Number(watermarkSizeRange.value);
+      syncWatermarkControls();
+      render();
+    });
+    watermarkSizeRange.addEventListener("change", () => {
+      commitHistory();
+      setStatus("已更新水印大小。");
+    });
+    watermarkUploadBtn.addEventListener("click", () => watermarkFileInput.click());
+    watermarkFileInput.addEventListener("change", async () => {
+      const file = watermarkFileInput.files && watermarkFileInput.files[0];
+      await loadWatermarkFile(file);
+      watermarkFileInput.value = "";
+    });
+    resetWatermarkBtn.addEventListener("click", resetWatermark);
     qualityRange.addEventListener("input", updateQualityState);
     formatSelect.addEventListener("change", updateQualityState);
     scaleSelect.addEventListener("change", renderPreview);
